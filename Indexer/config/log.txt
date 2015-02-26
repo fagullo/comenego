@@ -1,0 +1,22 @@
+Indexando textos del idioma es
+Creando nGramas para es
+Indexando ngramas de los textos 10000 a 20000
+Indexando ngramas de los textos 20000 a 30000
+Indexando ngramas de los textos 30000 a 40000
+Indexando ngramas de los textos 40000 a 50000
+Indexando ngramas de los textos 50000 a 60000
+Indexando textos del idioma es
+Creando nGramas para es
+Indexando ngramas de los textos 10000 a 20000
+Indexando ngramas de los textos 20000 a 30000
+Indexando textos del idioma es
+Indexando textos de 10000 a 20000
+Indexando textos de 20000 a 30000
+Indexando textos de 30000 a 40000
+Indexando textos de 40000 a 50000
+Indexando textos de 50000 a 60000
+Indexando textos de 60000 a 70000
+Indexando textos de 70000 a 80000
+Indexando textos de 80000 a 90000
+Indexando textos de 90000 a 100000
+Indexando textos de 100000 a 110000

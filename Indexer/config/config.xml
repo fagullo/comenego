@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<config>
+    <db_host>localhost</db_host>
+    <db_port>3306</db_port>
+    <db_name>corpus</db_name>
+    <db_user>corpus</db_user>
+    <db_pass>vffglg</db_pass>
+    <indexes_path>index</indexes_path>
+    <log_file>log/corpus.out</log_file>
+    
+    <indexconfig>
+        <lang id="es">
+            <index type="ngram"/>
+            <index type="paragraph"/>
+        </lang>
+        <lang id="en">
+            <index type="ngram"/>
+            <index type="paragraph"/>
+        </lang>
+        <lang id="fr">
+            <index type="ngram"/>
+            <index type="paragraph"/>
+        </lang>
+    </indexconfig>
+</config>
