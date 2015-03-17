@@ -23,6 +23,7 @@
         <script src="js/search.js" type="text/javascript"></script>
         <script src="js/backbone-min.js" type="text/javascript"></script>
         <script src="js/pager.js" type="text/javascript"></script>
+        <script src="js/jquery-ui.js" type="text/javascript"></script>
         <title><fmt:message key="index.title" /></title>
     </head>
     <body>
@@ -34,83 +35,111 @@
         <br/>
         <div id="content" class="col-md-10 col-md-offset-1">
             <div class="col-md-8 col-md-offset-2" style="clear: both;">
-                <ul class="nav nav-tabs" data-tabs="tabs">
+                <ul class="nav nav-tabs col-md-12" data-tabs="tabs">
                     <li class="active"><a href="#monolingual" data-toggle="tab"><fmt:message key="monolingualsearch" /></a></li>
                     <li><a href="#bilingual" data-toggle="tab"><fmt:message key="bilingualsearch" /></a></li>
                 </ul>
-                <div class="tab-content col-md-12">
-                    <div class="tab-pane active col-md-12" id="monolingual">  
-                        <form action="javascript:search()" method="POST" class="well form-inline" role="form">
-                            <div class="form-group col-md-8">
-                                <input type="text" name="search" class="form-control" id="search" placeholder="<fmt:message key="search.text" />">
+                <div class="tab-content col-md-12 no-padding">
+                    <div class="tab-pane active col-md-12 no-padding" id="monolingual">  
+                        <form action="javascript:search()" method="POST" class="well form-inline col-md-12" role="form">
+                            <div class="no-padding col-md-12" style="float: left;">
+                                <div class="form-group col-md-9 no-padding">
+                                    <input type="text" name="search" class="form-control" id="search" placeholder="<fmt:message key="search.text" />">
+                                </div>
+                                <div class="form-group col-md-2">
+                                    <input type="submit" class="btn btn-primary" name="create" value="<fmt:message key="search" />" id="create">
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <input type="submit" class="btn btn-primary" name="create" value="<fmt:message key="search" />" id="create">
-                            </div>
-                            <br/>
-                            <div class="title"><h1><fmt:message key="languages" /></h1></div>
-                            <div class="btn-group col-md-12" data-toggle="buttons">
-                                <label class="btn btn-default active" onclick="$('#search-lang').val($(this).children('input').prop('value'))">
-                                    <input type="radio" value="es">
-                                    Castellano
-                                </label>
-                                <label class="btn btn-default" onclick="$('#search-lang').val($(this).children('input').prop('value'))">
-                                    <input type="radio" value="en" >
-                                    English
-                                </label>
-                                <label class="btn btn-default" onclick="$('#search-lang').val($(this).children('input').prop('value'))">
-                                    <input type="radio" value="fr">
-                                    Français
-                                </label>
+                                <div id="lang-container" class="col-md-12">
+                                <div class="title"><h1><fmt:message key="languages" /></h1></div>
+                                <div class="btn-group col-md-12" data-toggle="buttons">
+                                    <label class="btn btn-default active lang-btn">
+                                        <input type="radio" value="es">
+                                        Castellano
+                                    </label>
+                                    <label class="btn btn-default lang-btn">
+                                        <input type="radio" value="en" >
+                                        English
+                                    </label>
+                                    <label class="btn btn-default lang-btn">
+                                        <input type="radio" value="fr">
+                                        Français
+                                    </label>
+                                </div>
                             </div>
                             <input type="hidden" value="es" name="search-lang" id="search-lang"/>
-                            <div class="title"><h1><fmt:message key="discourses" /></h1></div>
-                            <label class="checkbox-inline" for="disSCI" style="padding-left: 5px !important;">
-                                <fmt:message key="discourses.scientific" />
-                            </label>
-                            <input type="checkbox" name="discourses-selection" value="SCI" id="disSCI" checked="checked">
-                            <label class="checkbox-inline" for="disCOM" style="padding-left: 5px !important;">
-                                <fmt:message key="discourses.comercial" />
-                            </label>
-                            <input type="checkbox" name="discourses-selection" value="COM" id="disCOM" checked="checked">
-                            <label class="checkbox-inline" for="disDID" style="padding-left: 5px !important;">
-                                <fmt:message key="discourses.didactic" />
-                            </label>
-                            <input type="checkbox" name="discourses-selection" value="DID" id="disDID" checked="checked">
-                            <label class="checkbox-inline" for="disLEG" style="padding-left: 5px !important;">
-                                <fmt:message key="discourses.legal" />
-                            </label>
-                            <input type="checkbox" name="discourses-selection" value="LEG" id="disLEG" checked="checked">
-                            <label class="checkbox-inline" for="disORG" style="padding-left: 5px !important;">
-                                <fmt:message key="discourses.organizational" />
-                            </label>
-                            <input type="checkbox" name="discourses-selection" value="ORG" id="disORG" checked="checked">
-                            <label class="checkbox-inline" for="disPRS" style="padding-left: 5px !important;">
-                                <fmt:message key="discourses.press" />
-                            </label>
-                            <input type="checkbox" name="discourses-selection" value="PRS" id="disPRS" checked="checked">
-                            <label class="checkbox-inline" for="disTEC" style="padding-left: 5px !important;">
-                                <fmt:message key="discourses.technical" />
-                            </label>
-                            <input type="checkbox" name="discourses-selection" value="TEC" id="disTEC" checked="checked">
-                            <div class="title"><h1><fmt:message key="orden" /></h1></div>
-                            <div class="btn-group col-md-12" data-toggle="buttons">
-                                <label class="btn btn-default active" onclick="$('#search-sort').val($(this).children('input').prop('value'))">
-                                    <input type="radio" value="">
-                                    <fmt:message key="orden.prioridad" />
+                            <div class="col-md-12" style="float: left;">
+                                <div class="title"><h1><fmt:message key="discourses" /></h1></div>
+                                <label class="checkbox-inline" for="disSCI" style="padding-left: 5px !important;">
+                                    <fmt:message key="discourses.scientific" />
                                 </label>
-                                <label class="btn btn-default" onclick="$('#search-sort').val($(this).children('input').prop('value'))">
-                                    <input type="radio" value="before1" >
-                                    <fmt:message key="orden.anterior" />
+                                <input type="checkbox" name="discourses-selection" value="SCI" id="disSCI" checked="checked">
+                                <label class="checkbox-inline" for="disCOM" style="padding-left: 5px !important;">
+                                    <fmt:message key="discourses.comercial" />
                                 </label>
-                                <label class="btn btn-default" onclick="$('#search-sort').val($(this).children('input').prop('value'))">
-                                    <input type="radio" value="after1">
-                                    <fmt:message key="orden.siguiente" />
+                                <input type="checkbox" name="discourses-selection" value="COM" id="disCOM" checked="checked">
+                                <label class="checkbox-inline" for="disDID" style="padding-left: 5px !important;">
+                                    <fmt:message key="discourses.didactic" />
                                 </label>
+                                <input type="checkbox" name="discourses-selection" value="DID" id="disDID" checked="checked">
+                                <label class="checkbox-inline" for="disLEG" style="padding-left: 5px !important;">
+                                    <fmt:message key="discourses.legal" />
+                                </label>
+                                <input type="checkbox" name="discourses-selection" value="LEG" id="disLEG" checked="checked">
+                                <label class="checkbox-inline" for="disORG" style="padding-left: 5px !important;">
+                                    <fmt:message key="discourses.organizational" />
+                                </label>
+                                <input type="checkbox" name="discourses-selection" value="ORG" id="disORG" checked="checked">
+                                <label class="checkbox-inline" for="disPRS" style="padding-left: 5px !important;">
+                                    <fmt:message key="discourses.press" />
+                                </label>
+                                <input type="checkbox" name="discourses-selection" value="PRS" id="disPRS" checked="checked">
+                                <label class="checkbox-inline" for="disTEC" style="padding-left: 5px !important;">
+                                    <fmt:message key="discourses.technical" />
+                                </label>
+                                <input type="checkbox" name="discourses-selection" value="TEC" id="disTEC" checked="checked">
                             </div>
-                            <input type="hidden" value="" name="search-sort" id="search-sort"/>
+                            <div class="col-md-12 btn-group-container" style="float: left;">
+                                <div class="col-md-6" >
+                                    <div class="title"><h1><fmt:message key="orden" /></h1></div>
+                                    <div class="btn-group col-md-12" data-toggle="buttons">
+                                        <label class="btn btn-default active order">
+                                            <input type="radio" value="">
+                                            <fmt:message key="orden.prioridad" />
+                                        </label>
+                                        <label class="btn btn-default order">
+                                            <input type="radio" value="before" >
+                                            <fmt:message key="orden.anterior" />
+                                        </label>
+                                        <label class="btn btn-default order">
+                                            <input type="radio" value="after">
+                                            <fmt:message key="orden.siguiente" />
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" id="skip-grams-container" style="display: none;">
 
-                            <input type="hidden" name="searchtype" id="searchtype" value="monolingual">
+                                    <div class="title"><h1><fmt:message key="orden.skip" /></h1></div>
+                                    <div class="btn-group col-md-12" data-toggle="buttons">
+                                        <label class="btn btn-default active skipg">
+                                            <input type="radio" value="1">1
+                                        </label>
+                                        <label class="btn btn-default skipg">
+                                            <input type="radio" value="2" >2
+                                        </label>
+                                        <label class="btn btn-default skipg">
+                                            <input type="radio" value="3">3
+                                        </label>
+                                        <label class="btn btn-default skipg">
+                                            <input type="radio" value="4">4
+                                        </label>
+                                    </div>
+                                    <input type="hidden" value="" name="search-sort" id="search-sort"/>
+                                    <input type="hidden" value="1" name="skip-grams" id="skip-grams"/>
+
+                                    <input type="hidden" name="searchtype" id="searchtype" value="monolingual">
+                                </div>
+                            </div>
                         </form>
                     </div>
                     <div class="tab-pane col-md-12 deporte-contenedor" id="bilingual">

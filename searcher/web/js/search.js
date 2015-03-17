@@ -1,70 +1,103 @@
 $(document).on({
-    ajaxStart: function() {
+    ajaxStart: function () {
         $("#pleaseWaitDialog").modal();
         $("body").addClass("loading");
     },
-    ajaxStop: function() {
+    ajaxStop: function () {
         $("body").removeClass("loading");
     }
+});
+
+$(document).ready(function () {
+    $(".order").click(function () {
+        $('#search-sort').val($(this).children('input').prop('value'));
+        $(".order").removeClass("active");
+        $(this).addClass("active");
+        if ($(this).children('input').prop('value') === "") {
+            $('#skip-grams-container').hide();
+        } else {
+            $('#skip-grams-container').show();
+        }
+        return false; //Prevent default action.
+    });
+
+    $(".lang-btn").click(function () {
+        $('#search-lang').val($(this).children('input').prop('value'));
+        $(".lang-btn").removeClass("active");
+        $(this).addClass("active");
+        return false; //Prevent default action.
+    });
+
+    $(".skipg").click(function () {
+        $('#skip-grams').val($(this).children('input').prop('value'));
+        $(".skipg").removeClass("active");
+        $(this).addClass("active");
+        return false; //Prevent default action.
+    });
 });
 
 function search(page, letter) {
     if (!page) {
         page = 1;
     }
-    if ( !letter ) {
+    if (!letter) {
         letter = "null";
     }
     var discourses = "";
     var sorted;
-    $("input[name='discourses-selection']:checked").each(function() {
+    $("input[name='discourses-selection']:checked").each(function () {
         discourses += $(this).val() + " ";
     });
-    $.post("/searcher/search", {
-        search: $("#search").val(),
-        languages: $('#search-lang').val(),
-        discourses: discourses,
-        page: page,
-        letter: letter,
-        sortField: $('#search-sort').val()
-    }, function(searchresult) {
-        if (!searchresult.matches || searchresult.matches.length == 0) {
-            $("#paginador").html("");
-            $("#hits").html(
-                    "<div class='alert alert-warning alert-dismissable'>"
-                    + "<button type='button' class='close' data-dismiss='alert' aria-hidden='true'>&times;</button>"
-                    + "No se ha encontrado ningún resultado.</div>");
-            $("#num-docs").html(0);
-        } else {
-            var matches = searchresult.matches;
-            sorted = searchresult.sorted;
-            $("#total-hits").show();
-            $("#num-docs").html(searchresult.numDocs);
-            var numPages = searchresult.numPages;
-            $("#hits").empty();
-            for (var i = 0; i < matches.length; i++) {
-                var resultObj = matches[i];
-                var link = resultObj.url;
-                var discourses = resultObj.discourses;
-                var snippet = resultObj.snippet.trim();
-                var matchPosition = snippet.indexOf("</b>");
-                var spaces = "";
-                if (matchPosition > 60) {
-                    snippet = snippet.substr(matchPosition - 59);
-                } else {
-                    for (var j = matchPosition; j < 59; j++) {
-                        spaces += "&nbsp;";
+    
+    var data = "search=" + $("#search").val() + "&languages=" + $('#search-lang').val() + "&discourses=" + discourses 
+            + "&page=" + page + "&letter=" + letter + "&sortField=" + $('#search-sort').val() + "&position=" + $('#skip-grams').val();
+    $.ajax({
+        type: "POST",
+        url: "/searcher/search",
+        data: data,
+        success: function (searchresult) {
+            if (!searchresult.matches || searchresult.matches.length === 0) {
+                $("#paginador").html("");
+                $("#hits").html(
+                        "<div class='alert alert-warning alert-dismissable'>"
+                        + "<button type='button' class='close' data-dismiss='alert' aria-hidden='true'>&times;</button>"
+                        + "No se ha encontrado ningún resultado.</div>");
+                $("#num-docs").html(0);
+            } else {
+                var matches = searchresult.matches;
+                sorted = searchresult.sorted;
+                $("#total-hits").show();
+                $("#num-docs").html(searchresult.numDocs);
+                var numPages = searchresult.numPages;
+                $("#hits").empty();
+                for (var i = 0; i < matches.length; i++) {
+                    var resultObj = matches[i];
+                    var link = resultObj.url;
+                    var discourses = resultObj.discourses;
+                    var snippet = resultObj.snippet.trim();
+                    var matchPosition = snippet.indexOf("</b>");
+                    var spaces = "";
+                    var targetPosition = 80;
+                    if (matchPosition > targetPosition) {
+                        snippet = snippet.substr(matchPosition - (targetPosition - 1));
+                    } else {
+                        for (var j = matchPosition; j < (targetPosition - 1); j++) {
+                            spaces += "&nbsp;";
+                        }
                     }
-                }
-                var listItem = "<li class='snippet' style='padding: 0 !important;'>"
-                        + "<div class='col-lg-10 col-md-10 col-sm-10 col-xs-10' style='padding: 0 !important;'>" + spaces + snippet + "</div>"
-                        + "<div class='col-lg-2 col-md-2 col-sm-2 col-xs-2' style='text-align: right; padding: 0 !important;'>"
-                        + "<a href='" + link + "' target='_blank'><div class='glyphicon glyphicon-link'></div></a> " + discourses + "</div>"
-                        + "</li>";
+                    var listItem = "<li class='snippet' style='padding: 0 !important;'>"
+                            + "<div class='col-lg-10 col-md-10 col-sm-10 col-xs-10' style='padding: 0 !important;'>" + spaces + snippet + "</div>"
+                            + "<div class='col-lg-2 col-md-2 col-sm-2 col-xs-2' style='text-align: right; padding: 0 !important;'>"
+                            + "<a href='" + link + "' target='_blank'><div class='glyphicon glyphicon-link'></div></a> " + discourses + "</div>"
+                            + "</li>";
 //                $("#hits").append("<li class='snippet'>" + spaces + snippet + "</li>");
-                $("#hits").append(listItem);
+                    $("#hits").append(listItem);
+                }
+                getPaginator(parseInt(page), numPages, letter, $("#search").val(), sorted);
             }
-            getPaginator(parseInt(page), numPages, letter, $("#search").val(), sorted);
+        },
+        error: function (XMLHttpRequest, textStatus, errorThrown) {
+            window.location.href = "login.jsp";
         }
     });
 }

@@ -46,7 +46,7 @@ public class Config {
         Element config = doc.getDocumentElement();
         // Set the index directory
         Element indexElem = XMLUtils.getElementNamed(config, "indexes_path");
-        INDEXES_PATH = indexElem == null ? webAppPath + "index" : getAbsolutePath(webAppPath, indexElem.getTextContent());
+        INDEXES_PATH = indexElem == null ? webAppPath + "index" : indexElem.getTextContent();
         // Set the log file
         Element logElem = XMLUtils.getElementNamed(config, "log_file");
         LOG_FILE = logElem == null ? webAppPath + "log" : getAbsolutePath(webAppPath, logElem.getTextContent());

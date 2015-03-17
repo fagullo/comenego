@@ -6,6 +6,7 @@
     <db_name>corpus</db_name>
     <db_user>corpus</db_user>
     <db_pass>vffglg</db_pass>
-    <indexes_path>index</indexes_path>
+    <indexes_path>/home/paco/Documentos/Comenego/index</indexes_path>
+    <!--<indexes_path>/home/pacoag89/index_calculator/index</indexes_path>-->
     <log_file>log/corpus.out</log_file>
 </config>

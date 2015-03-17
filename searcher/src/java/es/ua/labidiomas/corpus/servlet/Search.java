@@ -65,6 +65,8 @@ public class Search extends HttpServlet {
 
     private static final int DOCS_BY_PAGE = 50;
 
+    private HashMap<String, String> sortWords;
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json; charset=ISO-8859-1");
@@ -73,6 +75,7 @@ public class Search extends HttpServlet {
         String[] languages = request.getParameterValues("languages");
         String discourses = request.getParameter("discourses");
         String letter = request.getParameter("letter");
+        String position = request.getParameter("position");
         PrintWriter printout = response.getWriter();
         String page = request.getParameter("page") == null ? "1" : request.getParameter("page");
         boolean isLetter = false;
@@ -87,13 +90,14 @@ public class Search extends HttpServlet {
             if (discourses != null) {
                 Analyzer analyzer = _getAnalyzer(languages);
                 IndexSearcher indexSearcher = _prepareIndexSearcher(languages[0], sortField, searchText);
-                BooleanQuery searchQuery = _prepareQuery(searchText, discourses, analyzer, page, sortField, isLetter, letter);
+                BooleanQuery searchQuery = _prepareQuery(searchText, discourses, analyzer, page, sortField, position, isLetter, letter);
                 Highlighter textHighlighter = _prepareHighlighter(searchQuery);
 
                 TopGroups tg;
                 if (sortField == null || sortField.isEmpty()) {
                     tg = _prapareResults(searchQuery, indexSearcher, page);
                 } else {
+                    sortWords = new HashMap<String, String>();
                     tg = _prapareSortedResults(searchQuery, indexSearcher, page, sortField);
                 }
                 if (tg != null) {
@@ -105,15 +109,12 @@ public class Search extends HttpServlet {
                     conexion = DriverManager.getConnection(Config.CONEXION_STRING, Config.DB_USER, Config.DB_PASS);
                     GroupDocs groupDoc = groupedDocs[0];
                     int pageNum = Integer.parseInt(page);
-//                    if (!isLetter) {
-//                        pageNum = Integer.parseInt(page);
-//                    }
                     int offset = (pageNum - 1) * DOCS_BY_PAGE;
                     int numPageResults = pageNum * DOCS_BY_PAGE;
                     int top = Math.min(groupDoc.scoreDocs.length, numPageResults);
                     for (int i = offset; i < top; i++) {
                         ScoreDoc sd = groupDoc.scoreDocs[i];
-                        _getSnippets(searchText.length(), snippets, sd, indexSearcher, conexion, analyzer, textHighlighter, sortField, letter, isLetter);
+                        _getSnippets(searchText.length(), snippets, sd, indexSearcher, conexion, analyzer, textHighlighter, sortField, position, letter, isLetter);
                     }
                 }
             }
@@ -146,7 +147,7 @@ public class Search extends HttpServlet {
         }
     }
 
-    private void _getSnippets(int termSize, ArrayList<Object> snippets, ScoreDoc sd, IndexSearcher indexSearcher, Connection conexion, Analyzer analyzer, Highlighter textHighlighter, String order, String letter, boolean isLetter) throws IOException, SQLException, InvalidTokenOffsetsException {
+    private void _getSnippets(int termSize, ArrayList<Object> snippets, ScoreDoc sd, IndexSearcher indexSearcher, Connection conexion, Analyzer analyzer, Highlighter textHighlighter, String order, String position, String letter, boolean isLetter) throws IOException, SQLException, InvalidTokenOffsetsException {
         Document doc = indexSearcher.doc(sd.doc);
         int paragraphID = Integer.parseInt(doc.get("paragraphID"));
         int textID = Integer.parseInt(doc.get("textID"));
@@ -193,7 +194,7 @@ public class Search extends HttpServlet {
                             result.put("discourses", discourses);
                             start = end;
                             if (order != null && !order.isEmpty()) {
-                                _sort(result, snippets, order, letter, isLetter);
+                                _sort(result, snippets, order, position, letter, isLetter);
                             } else {
                                 snippets.add(result);
                                 result = new HashMap<String, String>();
@@ -204,7 +205,7 @@ public class Search extends HttpServlet {
                         result.put("url", url);
                         result.put("discourses", discourses);
                         if (order != null && !order.isEmpty()) {
-                            _sort(result, snippets, order, letter, isLetter);
+                            _sort(result, snippets, order, position, letter, isLetter);
                         } else {
                             snippets.add(result);
                         }
@@ -303,15 +304,15 @@ public class Search extends HttpServlet {
      * @param analyzer the analyzer used to index.
      * @return a boolean query which contains all the search criteria.
      */
-    private BooleanQuery _prepareQuery(String searchText, String discourses, Analyzer analyzer, String page, String sortField, boolean isLetter, String letter) throws ParseException {
+    private BooleanQuery _prepareQuery(String searchText, String discourses, Analyzer analyzer, String page, String sortField, String position, boolean isLetter, String letter) throws ParseException {
         if (isLetter) {
-            return _prepareLetterQuery(searchText, discourses, analyzer, letter, sortField);
+            return _prepareLetterQuery(searchText, discourses, analyzer, letter, sortField, position);
         } else {
             return _prepareQuery(searchText, discourses, analyzer);
         }
     }
 
-    private BooleanQuery _prepareLetterQuery(String searchText, String discourses, Analyzer analyzer, String letter, String sortField) throws ParseException {
+    private BooleanQuery _prepareLetterQuery(String searchText, String discourses, Analyzer analyzer, String letter, String sortField, String position) throws ParseException {
         BooleanQuery searchQuery = new BooleanQuery();
 
         BooleanQuery textBooleanQuery = new BooleanQuery();
@@ -321,7 +322,7 @@ public class Search extends HttpServlet {
         searchQuery.add(textBooleanQuery, BooleanClause.Occur.MUST);
 
         textBooleanQuery = new BooleanQuery();
-        textParser = new QueryParser(Version.LUCENE_47, sortField, analyzer);
+        textParser = new QueryParser(Version.LUCENE_47, sortField + position, analyzer);
         textQuery = textParser.parse(letter + "*");
         textBooleanQuery.add(textQuery, BooleanClause.Occur.MUST);
         searchQuery.add(textBooleanQuery, BooleanClause.Occur.MUST);
@@ -362,51 +363,68 @@ public class Search extends HttpServlet {
         }
     }
 
-    private String _getSortWord(String text, String order) {
-        String word;
-        if (order.equals("before1")) {
-            word = text.replaceAll(".* (\\S+) <b>.*", "$1");
-        } else {
-            word = text.replaceAll(".*</b> (\\S+) .*", "$1");
+    private String _getSortWord(String text, String order, String position) {
+        if (sortWords.containsKey(text)) {
+            return sortWords.get(text);
         }
+        String word;
+        if (order.equals("before")) {
+            text = " " + text;
+            if (position.equals("1")) {
+                word = text.replaceAll(".* (\\S+) <b>.*", "$1");
+            } else if (position.equals("2")) {
+                word = text.replaceAll(".* (\\S+) (\\S+) <b>.*", "$1");
+            } else if (position.equals("3")) {
+                word = text.replaceAll(".* (\\S+) (\\S+) (\\S+) <b>.*", "$1");
+            } else {
+                word = text.replaceAll(".* (\\S+) (\\S+) (\\S+) (\\S+) <b>.*", "$1");
+            }
+        } else {
+            if (position.equals("1")) {
+                word = text.replaceAll(".*</b>[\\S]* (\\S+).*", "$1");
+            } else if (position.equals("2")) {
+                word = text.replaceAll(".*</b>[\\S]* (\\S+) (\\S+).*", "$2");
+            } else if (position.equals("3")) {
+                word = text.replaceAll(".*</b>[\\S]* (\\S+) (\\S+) (\\S+).*", "$3");
+            } else {
+                word = text.replaceAll(".*</b>[\\S]* (\\S+) (\\S+) (\\S+) (\\S+).*", "$4");
+            }
+        }
+        if (word.equals(text)) {
+            word = "";
+        }
+        sortWords.put(text, word);
         return word;
     }
 
-    private void _sort(HashMap<String, String> snippet, ArrayList<Object> snippets, String order, String letter, boolean isLetter) {
+    private void _sort(HashMap<String, String> snippet, ArrayList<Object> snippets, String order, String position, String letter, boolean isLetter) {
         int start = 0;
         int end = snippets.size();
         int average;
         String candidate;
-        String word = _getSortWord(snippet.get("snippet"), order);
+        String word = _getSortWord(snippet.get("snippet"), order, position);
         if (!isLetter || word.startsWith(letter)) {
-            word = _replaceSpecialCharacters(word);
-            while (start != end) {
-                average = (start + end) / 2;
-                candidate = ((HashMap<String, String>) snippets.get(average)).get("snippet");
-                if (order.equals("before1")) {
-                    if (candidate.matches(".*\\s(\\S+)\\s?<b>.*")) {
-                        candidate = candidate.replaceAll(".*\\s(\\S+)\\s?<b>.*", "$1");
+            if (word.isEmpty()) {
+                snippets.add(0, snippet);
+            } else {
+                word = _replaceSpecialCharacters(word);
+                while (start != end) {
+                    average = (start + end) / 2;
+//                candidate = _getCandidate(((HashMap<String, String>) snippets.get(average)).get("snippet"), order, position);
+                    candidate = _getSortWord(((HashMap<String, String>) snippets.get(average)).get("snippet"), order, position).replaceAll("<i>(.*)</i>", "$1");
+                    int result = word.toLowerCase().compareTo(candidate.toLowerCase());
+                    if (result > 0) {
+                        start = average + 1;
+                    } else if (result == 0) {
+                        start = average;
+                        end = average;
                     } else {
-                        candidate = "";
-                    }
-                } else {
-                    if (candidate.matches(".*</b>\\s?(\\S+)\\s.*")) {
-                        candidate = candidate.replaceAll(".*</b>\\s?(\\S+)\\s.*", "$1");
-                    } else {
-                        candidate = "";
+                        end = average;
                     }
                 }
-                int result = word.toLowerCase().compareTo(candidate.toLowerCase());
-                if (result > 0) {
-                    start = average + 1;
-                } else if (result == 0) {
-                    start = average;
-                    end = average;
-                } else {
-                    end = average;
-                }
+                _setSnippet(snippet, order, position);
+                snippets.add(end, snippet);
             }
-            snippets.add(end, snippet);
         }
     }
 
@@ -442,6 +460,45 @@ public class Search extends HttpServlet {
         result = result.replaceAll("Ù", "U");
         result = result.replaceAll("Ü", "U");
         return result;
+    }
+
+    private void _setSnippet(HashMap<String, String> snippet, String order, String position) {
+        String text = snippet.get("snippet");
+        String word;
+        if (order.equals("before")) {
+            if (position.equals("1")) {
+                word = text.replaceAll("(.* )(\\S+)( <b>.*)", "$1<i>$2</i>$3");
+                if (word.equals(text)) {
+                    word = text.replaceAll("^(\\S+)( <b>.*)", "<i>$1</i>$2");
+                }
+            } else if (position.equals("2")) {
+                word = text.replaceAll("(.* )(\\S+)( \\S+ <b>.*)", "$1<i>$2</i>$3");
+                if (word.equals(text)) {
+                    word = text.replaceAll("^(\\S+)( \\S+ <b>.*)", "<i>$1</i>$2");
+                }
+            } else if (position.equals("3")) {
+                word = text.replaceAll("(.* )(\\S+)( \\S+ \\S+ <b>.*)", "$1<i>$2</i>$3");
+                if (word.equals(text)) {
+                    word = text.replaceAll("(.* )(\\S+)( \\S+ \\S+ <b>.*)", "<i>$1</i>$2");
+                }
+            } else {
+                word = text.replaceAll("^(\\S+)( \\S+ \\S+ \\S+ <b>.*)", "<i>$2</i>$3");
+                if (word.equals(text)) {
+                    word = text.replaceAll("^(\\S+)( \\S+ \\S+ <b>.*)", "<i>$1</i>$2");
+                }
+            }
+        } else {
+            if (position.equals("1")) {
+                word = text.replaceAll("(.*</b>[\\S]* )(\\S+)(.*)", "$1<i>$2</i>$3");
+            } else if (position.equals("2")) {
+                word = text.replaceAll("(.*</b>[\\S]* \\S+ )(\\S+)(.*)", "$1<i>$2</i>$3");
+            } else if (position.equals("3")) {
+                word = text.replaceAll("(.*</b>[\\S]* \\S+ \\S+ )(\\S+)(.*)", "$1<i>$2</i>$3");
+            } else {
+                word = text.replaceAll("(.*</b>[\\S]* \\S+ \\S+ \\S+ )(\\S+)(.*)", "$1<i>$2</i>$3");
+            }
+        }
+        snippet.put("snippet", word);
     }
 
 }

@@ -20,6 +20,7 @@ footer, header {
 
 .well {
     margin-top: 20px !important;
+    float: left !important;
 }
 
 #monolingual, #bilingual,#content>div {
@@ -43,9 +44,9 @@ our animation centered, and no-repeating */
     height:     100%;
     width:      100%;
     background: rgba( 255, 255, 255, .8 ) 
-                url('../media/img/ajax-loader.gif') 
-                50% 50% 
-                no-repeat;
+        url('../media/img/ajax-loader.gif') 
+        50% 50% 
+        no-repeat;
 }
 
 /* When the body has the loading class, we turn
@@ -68,6 +69,28 @@ body.loading .modal {
     color: blue;
 }
 
+.snippet>div>i {
+    color: red;
+}
+
 #hits {
     list-style-type: none;
+}
+
+.btn-group-container {
+    border: 2px inset #bab8b8;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+    margin-top: 10px;
+    padding-bottom: 15px;
+}
+
+.no-padding {
+    padding: 0 !important;
+}
+
+#lang-container {
+    float: left;
+    clear: both;
 }
