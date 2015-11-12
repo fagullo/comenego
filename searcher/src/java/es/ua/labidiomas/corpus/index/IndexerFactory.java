@@ -48,5 +48,9 @@ public class IndexerFactory {
             return new EnglishIndexer(indexPath);
         }
     }
+
+    public Indexer getNGrammaIndexer(String lang, int size) throws IOException {
+        return this._create(lang, Config.INDEXES_PATH + Config.FILE_SEPARATOR + "ngramas" + Config.FILE_SEPARATOR + size);
+    }
     
 }

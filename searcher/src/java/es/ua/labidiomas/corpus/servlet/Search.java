@@ -72,6 +72,7 @@ public class Search extends HttpServlet {
         response.setContentType("application/json; charset=ISO-8859-1");
         Connection conexion = null;
         String searchText = request.getParameter("search");
+        String subSearchText = request.getParameter("subsearch");
         String[] languages = request.getParameterValues("languages");
         String discourses = request.getParameter("discourses");
         String letter = request.getParameter("letter");
@@ -82,6 +83,9 @@ public class Search extends HttpServlet {
         if (letter != null && !letter.isEmpty() && !letter.equals("null")) {
             isLetter = true;
         }
+        if (subSearchText == null || subSearchText.equals("null")) {
+            subSearchText = null;
+        }
         String sortField = request.getParameter("sortField");
 
         HashMap<String, Object> result = new HashMap<String, Object>();
@@ -90,7 +94,7 @@ public class Search extends HttpServlet {
             if (discourses != null) {
                 Analyzer analyzer = _getAnalyzer(languages);
                 IndexSearcher indexSearcher = _prepareIndexSearcher(languages[0], sortField, searchText);
-                BooleanQuery searchQuery = _prepareQuery(searchText, discourses, analyzer, page, sortField, position, isLetter, letter);
+                BooleanQuery searchQuery = _prepareQuery(searchText, discourses, analyzer, page, sortField, position, isLetter, letter, subSearchText);
                 Highlighter textHighlighter = _prepareHighlighter(searchQuery);
 
                 TopGroups tg;
@@ -304,11 +308,15 @@ public class Search extends HttpServlet {
      * @param analyzer the analyzer used to index.
      * @return a boolean query which contains all the search criteria.
      */
-    private BooleanQuery _prepareQuery(String searchText, String discourses, Analyzer analyzer, String page, String sortField, String position, boolean isLetter, String letter) throws ParseException {
+    private BooleanQuery _prepareQuery(String searchText, String discourses, Analyzer analyzer, String page, String sortField, String position, boolean isLetter, String letter, String subSearch) throws ParseException {
         if (isLetter) {
             return _prepareLetterQuery(searchText, discourses, analyzer, letter, sortField, position);
         } else {
-            return _prepareQuery(searchText, discourses, analyzer);
+            if (subSearch != null) {
+                return _prepareQuerySubSearch(searchText, subSearch, discourses, analyzer);
+            } else {
+                return _prepareQuery(searchText, discourses, analyzer);
+            }
         }
     }
 
@@ -343,6 +351,32 @@ public class Search extends HttpServlet {
         QueryParser textParser = new QueryParser(Version.LUCENE_47, "text", analyzer);
         Query textQuery = textParser.parse(searchText);
         textBooleanQuery.add(textQuery, BooleanClause.Occur.MUST);
+
+        searchQuery.add(textBooleanQuery, BooleanClause.Occur.MUST);
+
+        BooleanQuery discourseBooleanQuery = new BooleanQuery();
+        QueryParser discourseParser = new QueryParser(Version.LUCENE_47, "discourse", analyzer);
+        Query discourseQuery = discourseParser.parse(discourses);
+        discourseBooleanQuery.add(discourseQuery, BooleanClause.Occur.MUST);
+        searchQuery.add(discourseBooleanQuery, BooleanClause.Occur.MUST);
+
+        return searchQuery;
+    }
+
+    private BooleanQuery _prepareQuerySubSearch(String searchText, String lastSearch, String discourses, Analyzer analyzer) throws ParseException {
+        BooleanQuery searchQuery = new BooleanQuery();
+
+        BooleanQuery textBooleanQuery = new BooleanQuery();
+        QueryParser textParser = new QueryParser(Version.LUCENE_47, "text", analyzer);
+        Query textQuery = textParser.parse(searchText);
+        textBooleanQuery.add(textQuery, BooleanClause.Occur.MUST);
+
+        searchQuery.add(textBooleanQuery, BooleanClause.Occur.MUST);
+
+        BooleanQuery text2BooleanQuery = new BooleanQuery();
+        QueryParser text2Parser = new QueryParser(Version.LUCENE_47, "text", analyzer);
+        Query text2Query = textParser.parse(lastSearch);
+        textBooleanQuery.add(text2Query, BooleanClause.Occur.MUST);
 
         searchQuery.add(textBooleanQuery, BooleanClause.Occur.MUST);
 

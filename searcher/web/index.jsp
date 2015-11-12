@@ -30,7 +30,17 @@
         <header class="col-md-8 col-md-offset-2">
             <img src="media/img/logocomenegoportada.jpg" alt="COMENEGO" />
             <!--<div class="col-md-12"><fmt:message key="index.welcome" /></div>-->
-            <a href="/searcher/login" class="btn btn-success" id="login-btn"><i class="glyphicon glyphicon-user"></i>&nbsp;<fmt:message key="index.login" /></a>
+            <%
+                if (session.getAttribute("userID") == null) {
+            %>
+            <a href="login.jsp" class="btn btn-success" id="login-btn"><i class="glyphicon glyphicon-user"></i>&nbsp;<fmt:message key="index.login" /></a>
+            <%
+            } else {
+            %>
+            <a href="logout" class="btn btn-danger" id="login-btn"><i class="glyphicon glyphicon-user"></i>&nbsp;<fmt:message key="index.logout" /></a>
+            <%
+                }
+            %>
         </header>
         <br/>
         <div id="content" class="col-md-10 col-md-offset-1">
@@ -46,11 +56,16 @@
                                 <div class="form-group col-md-9 no-padding">
                                     <input type="text" name="search" class="form-control" id="search" placeholder="<fmt:message key="search.text" />">
                                 </div>
-                                <div class="form-group col-md-2">
-                                    <input type="submit" class="btn btn-primary" name="create" value="<fmt:message key="search" />" id="create">
+                                <div class="col-md-2">
+                                    <div class="form-group col-md-5">
+                                        <input type="submit" class="btn btn-primary" name="create" value="<fmt:message key="search" />" id="create">
+                                    </div>
+                                    <div class="form-group col-md-5 col-md-offset-2">
+                                        <input type="button" class="btn btn-primary disabled" name="create" value="<fmt:message key="search.subsearch" />" id="subsearch">
+                                    </div>
                                 </div>
                             </div>
-                                <div id="lang-container" class="col-md-12">
+                            <div id="lang-container" class="col-md-12">
                                 <div class="title"><h1><fmt:message key="languages" /></h1></div>
                                 <div class="btn-group col-md-12" data-toggle="buttons">
                                     <label class="btn btn-default active lang-btn">

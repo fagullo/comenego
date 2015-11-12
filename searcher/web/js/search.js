@@ -1,3 +1,5 @@
+var lastSearch = null;
+
 $(document).on({
     ajaxStart: function () {
         $("#pleaseWaitDialog").modal();
@@ -9,6 +11,28 @@ $(document).on({
 });
 
 $(document).ready(function () {
+
+//    var data = JSON.stringify({
+//        "textID" : "393"
+//    });
+//    $.ajax({
+//        type: "POST",
+//        url: "/searcher/webresources/textindexer/create",
+//        contentType: 'application/json',
+//        dataType: 'text',
+//        data : data
+//    }, function (data) {
+//        console.log(data);
+//    });
+
+    $("#subsearch").click(function () {
+
+        if (!$("#subsearch").hasClass("disabled")) {
+            $("#subsearch").addClass("disabled");
+            search(1, "null", true);
+        }
+    });
+
     $(".order").click(function () {
         $('#search-sort').val($(this).children('input').prop('value'));
         $(".order").removeClass("active");
@@ -36,21 +60,33 @@ $(document).ready(function () {
     });
 });
 
-function search(page, letter) {
+function search(page, letter, subsearch) {
     if (!page) {
         page = 1;
     }
     if (!letter) {
         letter = "null";
     }
+    if (!subsearch) {
+        if ($("#subsearch").hasClass("disabled")) {
+            $("#subsearch").removeClass("disabled");
+        }
+    }
     var discourses = "";
     var sorted;
     $("input[name='discourses-selection']:checked").each(function () {
         discourses += $(this).val() + " ";
     });
-    
-    var data = "search=" + $("#search").val() + "&languages=" + $('#search-lang').val() + "&discourses=" + discourses 
-            + "&page=" + page + "&letter=" + letter + "&sortField=" + $('#search-sort').val() + "&position=" + $('#skip-grams').val();
+
+    var data;
+    if (subsearch && lastSearch != null) {
+        data = "search=" + lastSearch + "&languages=" + $('#search-lang').val() + "&discourses=" + discourses
+                + "&page=" + page + "&letter=" + letter + "&sortField=" + $('#search-sort').val() + "&position=" + $('#skip-grams').val() + "&subsearch=" + $("#search").val();
+    } else {
+        data = "search=" + $("#search").val() + "&languages=" + $('#search-lang').val() + "&discourses=" + discourses
+                + "&page=" + page + "&letter=" + letter + "&sortField=" + $('#search-sort').val() + "&position=" + $('#skip-grams').val() + "&subsearch=null";
+        lastSearch = $("#search").val();
+    }
     $.ajax({
         type: "POST",
         url: "/searcher/search",

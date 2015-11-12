@@ -36,9 +36,9 @@ public class LoginFilter implements Filter {
         HttpSession session = httpServletRequest.getSession(false);
         if (session == null || !isLoggedIn(session)) {
             System.out.println("Error");
-            chain.doFilter(request, response);
-//            httpServletResponse.sendError(401);
-//            return;
+//            chain.doFilter(request, response);
+            httpServletResponse.sendError(401);
+            return;
         } else {
             chain.doFilter(request, response);
         }
