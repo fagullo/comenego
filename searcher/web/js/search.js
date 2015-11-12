@@ -92,6 +92,7 @@ function search(page, letter, subsearch) {
         url: "/searcher/search",
         data: data,
         success: function (searchresult) {
+            console.log(searchrsult);
             if (!searchresult.matches || searchresult.matches.length === 0) {
                 $("#paginador").html("");
                 $("#hits").html(

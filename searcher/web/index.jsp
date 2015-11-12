@@ -37,14 +37,14 @@
             <%
             } else {
             %>
-            <a href="logout" class="btn btn-danger" id="login-btn"><i class="glyphicon glyphicon-user"></i>&nbsp;<fmt:message key="index.logout" /></a>
+            <a href="/searcher/services/comenego/logout" class="btn btn-danger" id="login-btn"><i class="glyphicon glyphicon-user"></i>&nbsp;<fmt:message key="index.logout" /></a>
             <%
                 }
             %>
         </header>
         <br/>
         <div id="content" class="col-md-10 col-md-offset-1">
-            <div class="col-md-8 col-md-offset-2" style="clear: both;">
+            <div class="col-lg-8 col-lg-offset-2 col-md-12" style="clear: both;">
                 <ul class="nav nav-tabs col-md-12" data-tabs="tabs">
                     <li class="active"><a href="#monolingual" data-toggle="tab"><fmt:message key="monolingualsearch" /></a></li>
                     <li><a href="#bilingual" data-toggle="tab"><fmt:message key="bilingualsearch" /></a></li>
@@ -53,15 +53,15 @@
                     <div class="tab-pane active col-md-12 no-padding" id="monolingual">  
                         <form action="javascript:search()" method="POST" class="well form-inline col-md-12" role="form">
                             <div class="no-padding col-md-12" style="float: left;">
-                                <div class="form-group col-md-9 no-padding">
+                                <div class="form-group col-md-10 no-padding left">
                                     <input type="text" name="search" class="form-control" id="search" placeholder="<fmt:message key="search.text" />">
                                 </div>
-                                <div class="col-md-2">
-                                    <div class="form-group col-md-5">
-                                        <input type="submit" class="btn btn-primary" name="create" value="<fmt:message key="search" />" id="create">
+                                <div class="col-md-12 left" style="padding-top: 50px;">
+                                    <div class="form-group col-md-offset-3 left">
+                                        <input type="submit" class="btn btn-primary left" name="create" value="<fmt:message key="search" />" id="create">
                                     </div>
-                                    <div class="form-group col-md-5 col-md-offset-2">
-                                        <input type="button" class="btn btn-primary disabled" name="create" value="<fmt:message key="search.subsearch" />" id="subsearch">
+                                    <div class="form-group left">
+                                        <input type="button" class="btn btn-primary disabled left" name="create" value="<fmt:message key="search.subsearch" />" id="subsearch">
                                     </div>
                                 </div>
                             </div>
@@ -115,7 +115,7 @@
                                 <input type="checkbox" name="discourses-selection" value="TEC" id="disTEC" checked="checked">
                             </div>
                             <div class="col-md-12 btn-group-container" style="float: left;">
-                                <div class="col-md-6" >
+                                <div class="col-md-12" >
                                     <div class="title"><h1><fmt:message key="orden" /></h1></div>
                                     <div class="btn-group col-md-12" data-toggle="buttons">
                                         <label class="btn btn-default active order">

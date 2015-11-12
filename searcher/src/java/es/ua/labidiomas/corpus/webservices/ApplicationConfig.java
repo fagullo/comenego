@@ -29,7 +29,8 @@ public class ApplicationConfig extends Application {
      * If required, comment out calling this method in getClasses().
      */
     private void addRestResourceClasses(Set<Class<?>> resources) {
-        resources.add(es.ua.labidiomas.corpus.services.Searcher.class);
+        resources.add(es.ua.labidiomas.corpus.exception.mapper.LoginExceptionMapper.class);
+        resources.add(es.ua.labidiomas.corpus.services.Comenego.class);
         resources.add(es.ua.labidiomas.corpus.webservices.IndexHandler.class);
     }
     

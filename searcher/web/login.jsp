@@ -31,17 +31,40 @@
             <img src="media/img/logocomenegoportada.jpg" alt="COMENEGO" />
             <!--<div class="col-md-12"><fmt:message key="index.welcome" /></div>-->
         </header>
+        <div id="content" class="col-md-10 col-md-offset-1"></div>
         <div class="col-md-4 col-md-offset-4">
 
-            <form class="form-signin" action="/searcher/login" method="POST">
+            <form class="form-signin" action="/searcher/services/comenego/login" method="POST">
                 <h2 class="form-signin-heading"><fmt:message key="login.sigInMsg" /></h2>
                 <label for="inputName" class="sr-only"><fmt:message key="login.user" /></label>
-                <input type="text" id="inputName" name="inputName" class="form-control" placeholder="<fmt:message key="login.user" />" required="" autofocus="">
+                <input type="text" id="inputName" name="name" class="form-control" placeholder="<fmt:message key="login.user" />" required="" autofocus="">
                 <label for="inputPassword" class="sr-only"><fmt:message key="login.password" /></label>
-                <input type="password" id="inputPassword" name="inputPassword" class="form-control" placeholder="<fmt:message key="login.password" />" required="">
-                <button class="btn btn-lg btn-primary btn-block" type="submit"><fmt:message key="login.sigIn" /></button>
+                <input type="password" id="inputPassword" name="password" class="form-control" placeholder="<fmt:message key="login.password" />" required="">
+                <button class="btn btn-lg btn-primary btn-block" type="button" id="submit"><fmt:message key="login.sigIn" /></button>
             </form>
-
+            <script>
+                $("#submit").click(function() {
+                    console.log("ENTRA");
+                    var loginData = {
+                        name: $("#inputName").val(),
+                        password: $("#inputPassword").val()
+                    };
+                    $.ajax({
+                        type: "POST",
+                        url: "/searcher/services/comenego/login",
+                        contentType: "application/json; charset=ISO-8859-1",
+                        data: JSON.stringify(loginData),
+                        success: function(data) {
+                            window.location.replace("/searcher");
+                        }, 
+                        error : function (XMLHttpRequest, textStatus, errorThrown) {
+                            $("#content").append("<div class='alert alert-danger alert-dismissible' role='alert'><button type='button'"
+                                    + "class='close' data-dismiss='alert' aria-label='Close'><span aria-hidden='true'>&times;</span>"
+                                    + "</button>" +  XMLHttpRequest.responseText + "</div>");
+                        }
+                    });
+                });
+            </script>
         </div>
         <footer class="col-md-8 col-md-offset-2">
             <div class="col-md-12">
