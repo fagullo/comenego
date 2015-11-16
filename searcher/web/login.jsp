@@ -51,7 +51,7 @@
                     };
                     $.ajax({
                         type: "POST",
-                        url: "/searcher/services/comenego/login",
+                        url: "/searcher/services/login/login",
                         contentType: "application/json; charset=ISO-8859-1",
                         data: JSON.stringify(loginData),
                         success: function(data) {

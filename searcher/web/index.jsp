@@ -37,7 +37,7 @@
             <%
             } else {
             %>
-            <a href="/searcher/services/comenego/logout" class="btn btn-danger" id="login-btn"><i class="glyphicon glyphicon-user"></i>&nbsp;<fmt:message key="index.logout" /></a>
+            <a href="/searcher/services/login/logout" class="btn btn-danger" id="login-btn"><i class="glyphicon glyphicon-user"></i>&nbsp;<fmt:message key="index.logout" /></a>
             <%
                 }
             %>
