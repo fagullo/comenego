@@ -20,3 +20,18 @@ Indexando textos de 70000 a 80000
 Indexando textos de 80000 a 90000
 Indexando textos de 90000 a 100000
 Indexando textos de 100000 a 110000
+Indexando textos del idioma es
+Creando nGramas para es
+Creando nGramas para es
+Creando nGramas para es
+Creando nGramas para es
+Indexando textos del idioma en
+Creando nGramas para en
+Creando nGramas para en
+Creando nGramas para en
+Creando nGramas para en
+Indexando textos del idioma fr
+Creando nGramas para fr
+Creando nGramas para fr
+Creando nGramas para fr
+Creando nGramas para fr

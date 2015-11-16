@@ -111,7 +111,8 @@ public class Indexer {
         String lang = langNode.getAttribute("id");
 
         FileUtils.writeStringToFile(logFile, "Indexando textos del idioma " + lang + "\n", true);
-        try (PreparedStatement countPS = connection.prepareStatement("SELECT p.id FROM  paragraph p, text t, language l WHERE p.text_id = t.id AND language_id = l.id AND l.shortname = ?")) {
+        try (PreparedStatement countPS = connection.prepareStatement("SELECT p.id FROM  paragraph p, text t, language l WHERE p.text_id = t.id AND language_id = l.id AND l.shortname = ? limit 10")) {
+//        try (PreparedStatement countPS = connection.prepareStatement("SELECT p.id FROM  paragraph p, text t, language l WHERE p.text_id = t.id AND language_id = l.id AND l.shortname = ?")) {
             countPS.setString(1, lang);
             try (ResultSet texts = countPS.executeQuery()) {
 
