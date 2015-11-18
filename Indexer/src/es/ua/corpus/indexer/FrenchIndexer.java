@@ -12,17 +12,20 @@ import java.io.IOException;
  *
  * @author paco
  */
-public class FrenchIndexer extends Indexer {
-
+public class FrenchIndexer extends Indexer {    
     /**
      *
      * @param indexPath
      * @throws IOException
      */
-    public FrenchIndexer(String indexPath) throws IOException {
+    public FrenchIndexer(String indexPath, boolean lemma) throws IOException {
         super(indexPath);
-        this.analyzer = new FrenchAnalyzer();
-        this._initializeComponents(indexPath + Config.FILE_SEPARATOR + "fr");
+        this.analyzer = new FrenchAnalyzer(lemma);
+        if (lemma) {
+            this._initializeComponents(indexPath + Config.FILE_SEPARATOR + "lemma/fr");
+        } else {
+            this._initializeComponents(indexPath + Config.FILE_SEPARATOR + "fr");
+        }
     }
     
 }

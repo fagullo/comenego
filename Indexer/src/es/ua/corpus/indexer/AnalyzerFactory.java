@@ -26,13 +26,13 @@ public class AnalyzerFactory {
         return instance;
     }
     
-    public Analyzer getAnalyzer(String lang) {
+    public Analyzer getAnalyzer(String lang, boolean lemma) {
         if ( lang.equals("es") ) {
-            return new SpanishAnalyzer();
+            return new SpanishAnalyzer(lemma);
         } else if ( lang.equals("fr") ) {
-            return new FrenchAnalyzer();
+            return new FrenchAnalyzer(lemma);
         } else {
-            return new EnglishAnalyzer();
+            return new EnglishAnalyzer(lemma);
         }
     }
 }

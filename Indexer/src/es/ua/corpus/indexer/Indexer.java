@@ -66,7 +66,8 @@ public class Indexer {
      */
     public static void main(String[] args) throws IOException, FileNotFoundException, ParserConfigurationException, SAXException, SQLException, ClassNotFoundException {
         Config.loadConfig("config/config.xml");
-        Indexer indexer = new Indexer("index");
+//        Indexer indexer = new Indexer("index");
+        Indexer indexer = new Indexer("/home/paco/Documentos/comenego/index");
         indexer.readIndexConfig("config" + Config.FILE_SEPARATOR + "config.xml");
     }
 
@@ -111,8 +112,8 @@ public class Indexer {
         String lang = langNode.getAttribute("id");
 
         FileUtils.writeStringToFile(logFile, "Indexando textos del idioma " + lang + "\n", true);
-        try (PreparedStatement countPS = connection.prepareStatement("SELECT p.id FROM  paragraph p, text t, language l WHERE p.text_id = t.id AND language_id = l.id AND l.shortname = ? limit 10")) {
-//        try (PreparedStatement countPS = connection.prepareStatement("SELECT p.id FROM  paragraph p, text t, language l WHERE p.text_id = t.id AND language_id = l.id AND l.shortname = ?")) {
+//        try (PreparedStatement countPS = connection.prepareStatement("SELECT p.id FROM  paragraph p, text t, language l WHERE p.text_id = t.id AND language_id = l.id AND l.shortname = ? limit 50")) {
+        try (PreparedStatement countPS = connection.prepareStatement("SELECT p.id FROM  paragraph p, text t, language l WHERE p.text_id = t.id AND language_id = l.id AND l.shortname = ?")) {
             countPS.setString(1, lang);
             try (ResultSet texts = countPS.executeQuery()) {
 
@@ -123,16 +124,20 @@ public class Indexer {
                     String type = index.getAttribute("type");
                     switch (type) {
                         case "ngram":
-                            for (int size = 1; size <= NGRAM_SIZE; size++) {
-                                _indexNGramas(connection, texts, lang, size);
-                                texts.first();
-                            }
+//                            for (int size = 1; size <= NGRAM_SIZE; size++) {
+//                                _indexNGramas(connection, texts, lang, size, true);
+//                                texts.first();
+//                                _indexNGramas(connection, texts, lang, size, false);
+//                                texts.first();
+//                            }
                             break;
                         case "paragraph":
-                            _indexTexts(connection, texts, lang);
+                            _indexTexts(connection, texts, lang, true);
+                            texts.first();
+                            _indexTexts(connection, texts, lang, false);
                             break;
                         case "title":
-                            _indexTitle(connection, lang);
+//                            _indexTitle(connection, lang);
                             break;
                     }
                     texts.first();
@@ -141,9 +146,9 @@ public class Indexer {
         }
     }
 
-    private void _indexTexts(Connection conexion, ResultSet texts, String lang) throws SQLException, IOException {
+    private void _indexTexts(Connection conexion, ResultSet texts, String lang, boolean lemma) throws SQLException, IOException {
         int counter = 0;
-        Indexer indexer = IndexerFactory.getInstance().getIndexer(lang);
+        Indexer indexer = IndexerFactory.getInstance().getIndexer(lang, lemma);
         while (texts.next()) {
             int paragraphID = texts.getInt("id");
             String textSelect = "SELECT content, text_id FROM paragraph WHERE id = ?;";
@@ -177,9 +182,9 @@ public class Indexer {
         indexer.close();
     }
 
-    private void _indexNGramas(Connection conexion, ResultSet texts, String lang, int size) throws SQLException, IOException {
+    private void _indexNGramas(Connection conexion, ResultSet texts, String lang, int size, boolean lemma) throws SQLException, IOException {
         FileUtils.writeStringToFile(logFile, "Creando nGramas para " + lang + "\n", true);
-        Indexer indexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, size);
+        Indexer indexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, size, lemma);
         int counter = 0;
         while (texts.next()) {
             int paragraphID = texts.getInt("id");
@@ -297,9 +302,5 @@ public class Indexer {
      */
     public void close() throws CorruptIndexException, IOException {
         writer.close();
-    }
-
-    private void _indexTitle(Connection connection, String lang) {
-        System.out.println("Indexando titulos para '" + lang + "'");
     }
 }
