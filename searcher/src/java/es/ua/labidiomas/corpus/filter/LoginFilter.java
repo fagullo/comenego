@@ -53,7 +53,6 @@ public class LoginFilter implements Filter {
         if (session.getAttribute("userID") == null) {
             return false;
         } else {
-            String userID = (String) session.getAttribute("userID");
             return true;
         }
 

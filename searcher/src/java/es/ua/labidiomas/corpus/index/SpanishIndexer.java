@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package es.ua.labidiomas.corpus.index;
 
 import es.ua.labidiomas.corpus.util.Config;
@@ -20,10 +19,14 @@ public class SpanishIndexer extends Indexer {
      * @param indexPath
      * @throws IOException
      */
-    public SpanishIndexer(String indexPath) throws IOException {
+    public SpanishIndexer(String indexPath, boolean lemma) throws IOException {
         super(indexPath);
-        this.analyzer = new SpanishAnalyzer();
-        this._initializeComponents(indexPath + Config.FILE_SEPARATOR + "es");
+        this.analyzer = new SpanishAnalyzer(lemma);
+        if (lemma) {
+            this._initializeComponents(indexPath + Config.FILE_SEPARATOR + "lemma/es");
+        } else {
+            this._initializeComponents(indexPath + Config.FILE_SEPARATOR + "es");
+        }
     }
-    
+
 }

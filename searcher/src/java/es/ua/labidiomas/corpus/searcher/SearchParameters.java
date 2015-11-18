@@ -21,6 +21,7 @@ public class SearchParameters {
     private String search;
     private String sortField;
     private String subsearch;
+    private boolean lemma = false;
 
     public SearchParameters() {
     }
@@ -92,5 +93,12 @@ public class SearchParameters {
     public boolean isLetterSearch() {
         return letter != null && !letter.isEmpty() && !letter.equals("null");
     }
-    
+
+    public boolean isLemma() {
+        return lemma;
+    }
+
+    public void setLemma(boolean lemma) {
+        this.lemma = lemma;
+    }
 }

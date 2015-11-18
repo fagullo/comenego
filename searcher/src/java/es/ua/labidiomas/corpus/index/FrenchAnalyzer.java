@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package es.ua.labidiomas.corpus.index;
 
 import java.io.Reader;
@@ -23,12 +22,20 @@ import org.tartarus.snowball.ext.FrenchStemmer;
  */
 public class FrenchAnalyzer extends Analyzer {
 
+    private boolean lemma;
+
+    public FrenchAnalyzer(boolean lemma) {
+        this.lemma = lemma;
+    }
+
     @Override
     protected Analyzer.TokenStreamComponents createComponents(String string, Reader reader) {
         Tokenizer tokenizer = new StandardTokenizer(Version.LUCENE_47, reader);
         TokenFilter filters = new ASCIIFoldingFilter(tokenizer);
         filters = new LowerCaseFilter(Version.LUCENE_47, filters);
-        filters = new SnowballFilter(filters, new FrenchStemmer());
+        if (lemma) {
+            filters = new SnowballFilter(filters, new FrenchStemmer());
+        }
         return new Analyzer.TokenStreamComponents(tokenizer, filters);
     }
 }

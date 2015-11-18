@@ -92,7 +92,7 @@ public class Search extends HttpServlet {
         ArrayList<Object> snippets = new ArrayList<Object>();
         try {
             if (discourses != null) {
-                Analyzer analyzer = _getAnalyzer(languages);
+                Analyzer analyzer = _getAnalyzer(languages, true);
                 IndexSearcher indexSearcher = _prepareIndexSearcher(languages[0], sortField, searchText);
                 BooleanQuery searchQuery = _prepareQuery(searchText, discourses, analyzer, page, sortField, position, isLetter, letter, subSearchText);
                 Highlighter textHighlighter = _prepareHighlighter(searchQuery);
@@ -389,9 +389,9 @@ public class Search extends HttpServlet {
         return searchQuery;
     }
 
-    private Analyzer _getAnalyzer(String[] languages) {
+    private Analyzer _getAnalyzer(String[] languages, boolean lemma) {
         if (languages.length == 1) {
-            return AnalyzerFactory.getInstance().getAnalyzer(languages[0]);
+            return AnalyzerFactory.getInstance().getAnalyzer(languages[0], lemma);
         } else {
             return null;
         }

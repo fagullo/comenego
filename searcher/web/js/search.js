@@ -1,31 +1,26 @@
 var lastSearch = null;
 
 $(document).on({
-    ajaxStart: function () {
+    ajaxStart: function() {
         $("#pleaseWaitDialog").modal();
         $("body").addClass("loading");
     },
-    ajaxStop: function () {
+    ajaxStop: function() {
         $("body").removeClass("loading");
     }
 });
 
-$(document).ready(function () {
+$(document).ready(function() {
 
-//    var data = JSON.stringify({
-//        "textID" : "393"
-//    });
-//    $.ajax({
-//        type: "POST",
-//        url: "/searcher/webresources/textindexer/create",
-//        contentType: 'application/json',
-//        dataType: 'text',
-//        data : data
-//    }, function (data) {
-//        console.log(data);
-//    });
+    $("#great").change(function() {
+        if ($("#lemmatizer").val() === "false") {
+            $("#lemmatizer").val("true");
+        } else {
+            $("#lemmatizer").val("false");
+        }
+    });
 
-    $("#subsearch").click(function () {
+    $("#subsearch").click(function() {
 
         if (!$("#subsearch").hasClass("disabled")) {
             $("#subsearch").addClass("disabled");
@@ -33,7 +28,7 @@ $(document).ready(function () {
         }
     });
 
-    $(".order").click(function () {
+    $(".order").click(function() {
         $('#search-sort').val($(this).children('input').prop('value'));
         $(".order").removeClass("active");
         $(this).addClass("active");
@@ -45,14 +40,14 @@ $(document).ready(function () {
         return false; //Prevent default action.
     });
 
-    $(".lang-btn").click(function () {
+    $(".lang-btn").click(function() {
         $('#search-lang').val($(this).children('input').prop('value'));
         $(".lang-btn").removeClass("active");
         $(this).addClass("active");
         return false; //Prevent default action.
     });
 
-    $(".skipg").click(function () {
+    $(".skipg").click(function() {
         $('#skip-grams').val($(this).children('input').prop('value'));
         $(".skipg").removeClass("active");
         $(this).addClass("active");
@@ -74,25 +69,48 @@ function search(page, letter, subsearch) {
     }
     var discourses = "";
     var sorted;
-    $("input[name='discourses-selection']:checked").each(function () {
+    $("input[name='discourses-selection']:checked").each(function() {
         discourses += $(this).val() + " ";
     });
 
     var data;
     if (subsearch && lastSearch != null) {
-        data = "search=" + lastSearch + "&languages=" + $('#search-lang').val() + "&discourses=" + discourses
-                + "&page=" + page + "&letter=" + letter + "&sortField=" + $('#search-sort').val() + "&position=" + $('#skip-grams').val() + "&subsearch=" + $("#search").val();
+//        data = "search=" + lastSearch + "&languages=" + $('#search-lang').val() + "&discourses=" + discourses
+//                + "&page=" + page + "&letter=" + letter + "&sortField=" + $('#search-sort').val() + "&position=" + $('#skip-grams').val() + "&subsearch=" + $("#search").val();
+        data = {
+            search: lastSearch,
+            languages: $('#search-lang').val(),
+            discourses: discourses,
+            page: page,
+            letter: letter,
+            sortField: $('#search-sort').val(),
+            position: $('#skip-grams').val(),
+            subsearch: $("#search").val(),
+            lemma : $("#lemmatizer").val()
+        };
     } else {
-        data = "search=" + $("#search").val() + "&languages=" + $('#search-lang').val() + "&discourses=" + discourses
-                + "&page=" + page + "&letter=" + letter + "&sortField=" + $('#search-sort').val() + "&position=" + $('#skip-grams').val() + "&subsearch=null";
-        lastSearch = $("#search").val();
+        data = {
+            search: $("#search").val(),
+            languages: $('#search-lang').val(),
+            discourses: discourses,
+            page: page,
+            letter: letter,
+            sortField: $('#search-sort').val(),
+            position: $('#skip-grams').val(),
+            subsearch: null,
+            lastSearch: $("#search").val(),
+            lemma : $("#lemmatizer").val()
+        };
     }
+
     $.ajax({
         type: "POST",
-        url: "/searcher/search",
-        data: data,
-        success: function (searchresult) {
-            console.log(searchrsult);
+        url: "/searcher/services/comenego/load",
+        contentType: "application/json; charset=ISO-8859-1",
+        data: JSON.stringify(data),
+//        data: data,
+        success: function(searchresult) {
+            console.log(searchresult);
             if (!searchresult.matches || searchresult.matches.length === 0) {
                 $("#paginador").html("");
                 $("#hits").html(
@@ -133,7 +151,7 @@ function search(page, letter, subsearch) {
                 getPaginator(parseInt(page), numPages, letter, $("#search").val(), sorted);
             }
         },
-        error: function (XMLHttpRequest, textStatus, errorThrown) {
+        error: function(XMLHttpRequest, textStatus, errorThrown) {
             window.location.href = "login.jsp";
         }
     });

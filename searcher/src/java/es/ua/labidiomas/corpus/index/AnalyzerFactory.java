@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package es.ua.labidiomas.corpus.index;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -13,26 +12,27 @@ import org.apache.lucene.analysis.Analyzer;
  * @author paco
  */
 public class AnalyzerFactory {
+
     private static AnalyzerFactory instance = null;
-    
+
     private AnalyzerFactory() {
-        
+
     }
-    
+
     public static AnalyzerFactory getInstance() {
-        if ( instance == null ) {
+        if (instance == null) {
             instance = new AnalyzerFactory();
         }
         return instance;
     }
-    
-    public Analyzer getAnalyzer(String lang) {
-        if ( lang.equals("es") ) {
-            return new SpanishAnalyzer();
-        } else if ( lang.equals("fr") ) {
-            return new FrenchAnalyzer();
+
+    public Analyzer getAnalyzer(String lang, boolean lemma) {
+        if (lang.equals("es")) {
+            return new SpanishAnalyzer(lemma);
+        } else if (lang.equals("fr")) {
+            return new FrenchAnalyzer(lemma);
         } else {
-            return new EnglishAnalyzer();
+            return new EnglishAnalyzer(lemma);
         }
     }
 }

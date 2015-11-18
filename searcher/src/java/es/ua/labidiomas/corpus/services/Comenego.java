@@ -6,6 +6,7 @@
 package es.ua.labidiomas.corpus.services;
 
 import es.ua.labidiomas.corpus.searcher.LuceneSnippet;
+import es.ua.labidiomas.corpus.searcher.NGramsComparator;
 import es.ua.labidiomas.corpus.searcher.SearchParameters;
 import es.ua.labidiomas.corpus.searcher.SearchResponse;
 import es.ua.labidiomas.corpus.searcher.Searcher;
@@ -15,6 +16,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import javax.servlet.ServletContext;
@@ -46,8 +48,6 @@ public class Comenego {
     private Searcher searcher;
 
     private static final int DOCS_BY_PAGE = 50;
-
-    private HashMap<String, String> sortWords;
 
     @Context
     private ServletContext context;
@@ -81,20 +81,15 @@ public class Comenego {
         Connection connection = null;
         try {
             if (parameters.getDiscourses() != null) {
-                Analyzer analyzer = searcher.getAnalyzer(parameters.getLanguages());
-                IndexSearcher indexSearcher = searcher.prepareIndexSearcher(parameters.getLanguages().get(0), parameters.getSortField(), parameters.getSearch());
+                Analyzer analyzer = searcher.getAnalyzer(parameters.getLanguages(), parameters.isLemma());
+                IndexSearcher indexSearcher = searcher.prepareIndexSearcher(parameters.getLanguages().get(0), parameters.getSortField(), parameters.getSearch(), parameters.isLemma());
                 BooleanQuery searchQuery = searcher.prepareQuery(parameters.getSearch(), parameters.getDiscourses(), analyzer,
                         parameters.getSortField(), parameters.getPosition(), parameters.isLetterSearch(), parameters.getLetter(),
                         parameters.getSubsearch());
                 Highlighter textHighlighter = searcher.prepareHighlighter(searchQuery);
 
                 TopGroups tg;
-                if (parameters.getSortField() == null || parameters.getSortField().isEmpty()) {
-                    tg = searcher.prapareResults(searchQuery, indexSearcher, parameters.getPage());
-                } else {
-                    sortWords = new HashMap<String, String>();
-                    tg = searcher.prapareSortedResults(searchQuery, indexSearcher, parameters.getPage(), parameters.getSortField());
-                }
+                tg = searcher.prapareResults(searchQuery, indexSearcher, parameters.getPage());
                 if (tg != null) {
 
                     GroupDocs[] groupedDocs = tg.groups;
@@ -112,6 +107,12 @@ public class Comenego {
                     }
                 }
             }
+            if (parameters.getSortField() != null && !parameters.getSortField().isEmpty()) {
+                Collections.sort(snippets, new NGramsComparator(parameters.getSortField(), parameters.getPosition(), new HashMap<String, String>()));
+                for ( LuceneSnippet sn : snippets ) {
+                    searcher.setSnippet(sn, parameters.getSortField(), parameters.getPosition());
+                }
+            }
             result.setMatches(snippets);
             if (parameters.getSortField() == null || parameters.getSortField().isEmpty()) {
                 result.setSorted(false);
@@ -119,7 +120,7 @@ public class Comenego {
                 result.setSorted(true);
             }
         } finally {
-            if ( connection != null ) {
+            if (connection != null) {
                 connection.close();
             }
         }
