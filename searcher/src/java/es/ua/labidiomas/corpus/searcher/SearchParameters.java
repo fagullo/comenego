@@ -16,11 +16,12 @@ public class SearchParameters {
     private String discourses;
     private List<String> languages;
     private String letter;
-    private String page = "1";
+    private Integer page = 1;
     private String position;
     private String search;
     private String sortField;
     private String subsearch;
+    private boolean lemma = false;
 
     public SearchParameters() {
     }
@@ -73,11 +74,11 @@ public class SearchParameters {
         this.position = position;
     }
 
-    public String getPage() {
+    public Integer getPage() {
         return page;
     }
 
-    public void setPage(String page) {
+    public void setPage(Integer page) {
         this.page = page;
     }
 
@@ -92,5 +93,12 @@ public class SearchParameters {
     public boolean isLetterSearch() {
         return letter != null && !letter.isEmpty() && !letter.equals("null");
     }
-    
+
+    public boolean isLemma() {
+        return lemma;
+    }
+
+    public void setLemma(boolean lemma) {
+        this.lemma = lemma;
+    }
 }

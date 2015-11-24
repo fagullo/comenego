@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package es.ua.labidiomas.corpus.searcher;
+package es.ua.labidiomas.corpus.login;
 
 /**
  *

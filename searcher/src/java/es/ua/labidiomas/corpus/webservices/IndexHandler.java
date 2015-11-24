@@ -54,12 +54,20 @@ public class IndexHandler {
     public Response delete(@PathParam("textid") String textid, @PathParam("lang") String lang, @PathParam("token") String token) throws IOException {
         if (token.equals("0e6fc01af115ebcde732087613da3c44")) {
             for (int i = 1; i <= Indexer.NGRAM_SIZE; i++) {
-                Indexer nGramIndexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, i);
+                Indexer nGramIndexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, i, true);
+                nGramIndexer.deleteDocument(textid, lang, Config.FILE_SEPARATOR);
+                nGramIndexer.commit();
+                nGramIndexer.close();
+                nGramIndexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, i, false);
                 nGramIndexer.deleteDocument(textid, lang, Config.FILE_SEPARATOR);
                 nGramIndexer.commit();
                 nGramIndexer.close();
             }
-            Indexer indexer = IndexerFactory.getInstance().getIndexer(lang);
+            Indexer indexer = IndexerFactory.getInstance().getIndexer(lang, true);
+            indexer.deleteIndex(textid, lang, Config.FILE_SEPARATOR);
+            indexer.commit();
+            indexer.close();
+            indexer = IndexerFactory.getInstance().getIndexer(lang, false);
             indexer.deleteIndex(textid, lang, Config.FILE_SEPARATOR);
             indexer.commit();
             indexer.close();
@@ -76,12 +84,21 @@ public class IndexHandler {
     public Response update(@PathParam("textid") String textid, @PathParam("lang") String lang, @PathParam("token") String token) throws IOException {
         if (token.equals("0e6fc01af115ebcde732087613da3c44")) {
             for (int i = 1; i <= Indexer.NGRAM_SIZE; i++) {
-                Indexer nGramIndexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, i);
+                Indexer nGramIndexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, i, true);
+                nGramIndexer.deleteDocument(textid, lang, Config.FILE_SEPARATOR);
+                nGramIndexer.commit();
+                nGramIndexer.close();
+                nGramIndexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, i, false);
                 nGramIndexer.deleteDocument(textid, lang, Config.FILE_SEPARATOR);
                 nGramIndexer.commit();
                 nGramIndexer.close();
             }
-            Indexer indexer = IndexerFactory.getInstance().getIndexer(lang);
+            Indexer indexer = IndexerFactory.getInstance().getIndexer(lang, true);
+            indexer.deleteIndex(textid, lang, Config.FILE_SEPARATOR);
+            indexer.createIndex(textid);
+            indexer.commit();
+            indexer.close();
+            indexer = IndexerFactory.getInstance().getIndexer(lang, false);
             indexer.deleteIndex(textid, lang, Config.FILE_SEPARATOR);
             indexer.createIndex(textid);
             indexer.commit();
@@ -98,7 +115,11 @@ public class IndexHandler {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response create(@PathParam("textid") String textid, @PathParam("lang") String lang, @PathParam("token") String token) throws IOException {
         if (token.equals("0e6fc01af115ebcde732087613da3c44")) {
-            Indexer indexer = IndexerFactory.getInstance().getIndexer(lang);
+            Indexer indexer = IndexerFactory.getInstance().getIndexer(lang, true);
+            indexer.createIndex(textid);
+            indexer.commit();
+            indexer.close();
+            indexer = IndexerFactory.getInstance().getIndexer(lang, false);
             indexer.createIndex(textid);
             indexer.commit();
             indexer.close();

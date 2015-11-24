@@ -136,7 +136,11 @@ public class Indexer implements Closeable {
                 discoursesPS.close();
                 this.index(Integer.parseInt(textID), Integer.parseInt(paragraphID), content, discourses, lang);
                 for (int size = 1; size <= NGRAM_SIZE; size++) {
-                    Indexer nGramIndexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, size);
+                    Indexer nGramIndexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, size, true);
+                    nGramIndexer._obtainNGramas(textID, paragraphID, content, size, discourses);
+                    nGramIndexer.commit();
+                    nGramIndexer.close();
+                    nGramIndexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, size, false);
                     nGramIndexer._obtainNGramas(textID, paragraphID, content, size, discourses);
                     nGramIndexer.commit();
                     nGramIndexer.close();

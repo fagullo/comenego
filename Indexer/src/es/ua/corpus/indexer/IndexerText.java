@@ -6,7 +6,6 @@
 package es.ua.corpus.indexer;
 
 import es.upv.xmlutils.XMLUtils;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -15,8 +14,9 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.xml.parsers.ParserConfigurationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -27,10 +27,8 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
@@ -42,7 +40,7 @@ import org.xml.sax.SAXException;
  *
  * @author paco
  */
-public class Indexer implements Closeable {
+public class IndexerText {
 
     /**
      * The writer.
@@ -79,7 +77,7 @@ public class Indexer implements Closeable {
      * @param indexPath Index directory path.
      * @throws IOException if an IO problem occurs.
      */
-    public Indexer(String indexPath) throws IOException {
+    public IndexerText(String indexPath) throws IOException {
         this.indexPath = indexPath;
     }
 
@@ -114,8 +112,9 @@ public class Indexer implements Closeable {
         String lang = langNode.getAttribute("id");
 
         FileUtils.writeStringToFile(logFile, "Indexando textos del idioma " + lang + "\n", true);
-//        try (PreparedStatement countPS = connection.prepareStatement("SELECT p.id FROM  paragraph p, text t, language l WHERE p.text_id = t.id AND language_id = l.id AND l.shortname = ? limit 50")) {
+//        try (PreparedStatement countPS = connection.prepareStatement("SELECT p.id FROM  paragraph p, text t, language l WHERE p.text_id = t.id AND language_id = l.id AND l.shortname = ? limit 10")) {
         try (PreparedStatement countPS = connection.prepareStatement("SELECT p.id FROM  paragraph p, text t, language l WHERE p.text_id = t.id AND language_id = l.id AND l.shortname = ?")) {
+//        try (PreparedStatement countPS = connection.prepareStatement("SELECT p.id FROM  paragraph p, text t, language l WHERE p.text_id = t.id AND language_id = l.id AND l.shortname = ?")) {
             countPS.setString(1, lang);
             try (ResultSet texts = countPS.executeQuery()) {
 
@@ -126,20 +125,17 @@ public class Indexer implements Closeable {
                     String type = index.getAttribute("type");
                     switch (type) {
                         case "ngram":
-//                            for (int size = 1; size <= NGRAM_SIZE; size++) {
-//                                _indexNGramas(connection, texts, lang, size, true);
-//                                texts.first();
-//                                _indexNGramas(connection, texts, lang, size, false);
-//                                texts.first();
-//                            }
+                            for (int size = 1; size <= NGRAM_SIZE; size++) {
+                                _indexNGramas(connection, texts, lang, size, true);
+                                texts.first();
+                                _indexNGramas(connection, texts, lang, size, false);
+                                texts.first();
+                            }
                             break;
                         case "paragraph":
                             _indexTexts(connection, texts, lang, true);
                             texts.first();
                             _indexTexts(connection, texts, lang, false);
-                            break;
-                        case "title":
-//                            _indexTitle(connection, lang);
                             break;
                     }
                     texts.first();
@@ -150,75 +146,75 @@ public class Indexer implements Closeable {
 
     private void _indexTexts(Connection conexion, ResultSet texts, String lang, boolean lemma) throws SQLException, IOException {
         int counter = 0;
-        try (Indexer indexer = IndexerFactory.getInstance().getIndexer(lang)) {
-            while (texts.next()) {
-                int paragraphID = texts.getInt("id");
-                String textSelect = "SELECT content, text_id FROM paragraph WHERE id = ?;";
-                try (PreparedStatement searchPS = conexion.prepareStatement(textSelect)) {//Obtener los textos uno a uno para no desbordar la pila.
-                    searchPS.setInt(1, paragraphID);
-                    try (ResultSet searchRS = searchPS.executeQuery()) {
-                        while (searchRS.next()) {
-                            String content = searchRS.getString("content");
-                            ArrayList<String> discourses = new ArrayList<>();
-                            int textID = searchRS.getInt("text_id");
-                            try (PreparedStatement discoursesPS = conexion.prepareStatement("SELECT dis.code "
-                                    + "FROM corpus.discourse_texts dt, corpus.text txt, corpus.discourse dis "
-                                    + "WHERE dt.text_id = txt.id AND dt.discourse_id = dis.id AND txt.id = ?;")) {
-                                discoursesPS.setDouble(1, textID);
-                                try (ResultSet discoursesRS = discoursesPS.executeQuery()) {
-                                    while (discoursesRS.next()) {
-                                        discourses.add(discoursesRS.getString("code"));
-                                    }
-                                }
-                            }
-                            indexer.index(textID, paragraphID, content, discourses);
+        Indexer indexer = IndexerFactory.getInstance().getIndexer(lang, lemma);
+        while (texts.next()) {
+            int paragraphID = texts.getInt("id");
+            String textSelect = "SELECT content, text_id FROM paragraph WHERE id = ?;";
+            PreparedStatement searchPS = conexion.prepareStatement(textSelect); //Obtener los textos uno a uno para no desbordar la pila.
+            searchPS.setInt(1, paragraphID);
+            ResultSet searchRS = searchPS.executeQuery();
+            while (searchRS.next()) {
+                String content = searchRS.getString("content");
+                ArrayList<String> discourses = new ArrayList<String>();
+                int textID = searchRS.getInt("text_id");
+                PreparedStatement discoursesPS = conexion.prepareStatement("SELECT dis.code "
+                        + "FROM corpus.discourse_texts dt, corpus.text txt, corpus.discourse dis "
+                        + "WHERE dt.text_id = txt.id AND dt.discourse_id = dis.id AND txt.id = ?;");
+                discoursesPS.setDouble(1, textID);
+                ResultSet discoursesRS = discoursesPS.executeQuery();
+                while (discoursesRS.next()) {
+                    discourses.add(discoursesRS.getString("code"));
+                }
+                discoursesRS.close();
+                discoursesPS.close();
+                indexer.index(textID, paragraphID, content, discourses);
 
-                        }
-                    }
-                }
-                if (++counter % 10000 == 0) {
-                    String salida = "Indexando textos de " + counter + " a " + (counter + 10000) + "\n";
-                    FileUtils.writeStringToFile(logFile, salida, true);
-                }
+            }
+            searchRS.close();
+            searchPS.close();
+            if (++counter % 10000 == 0) {
+                String salida = "Indexando textos de " + counter + " a " + (counter + 10000) + "\n";
+                FileUtils.writeStringToFile(logFile, salida, true);
             }
         }
+        indexer.close();
     }
 
     private void _indexNGramas(Connection conexion, ResultSet texts, String lang, int size, boolean lemma) throws SQLException, IOException {
         FileUtils.writeStringToFile(logFile, "Creando nGramas para " + lang + "\n", true);
-        try (Indexer indexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, size)) {
-            int counter = 0;
-            while (texts.next()) {
-                int paragraphID = texts.getInt("id");
-                String textSelect = "SELECT content, text_id FROM paragraph WHERE id = ?;";
-                try (PreparedStatement searchPS = conexion.prepareStatement(textSelect)) {
-                    //Obtener los textos uno a uno para no desbordar la pila.
-                    searchPS.setInt(1, paragraphID);
-                    try (ResultSet searchRS = searchPS.executeQuery()) {
-                        while (searchRS.next()) {
-                            String content = searchRS.getString("content");
-                            ArrayList<String> discourses = new ArrayList<>();
-                            int textID = searchRS.getInt("text_id");
-                            try (PreparedStatement discoursesPS = conexion.prepareStatement("SELECT dis.code "
-                                    + "FROM corpus.discourse_texts dt, corpus.text txt, corpus.discourse dis "
-                                    + "WHERE dt.text_id = txt.id AND dt.discourse_id = dis.id AND txt.id = ?;")) {
-                                discoursesPS.setDouble(1, textID);
-                                try (ResultSet discoursesRS = discoursesPS.executeQuery()) {
-                                    while (discoursesRS.next()) {
-                                        discourses.add(discoursesRS.getString("code"));
-                                    }
+        Indexer indexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, size, lemma);
+        int counter = 0;
+        while (texts.next()) {
+            int paragraphID = texts.getInt("id");
+            String textSelect = "SELECT content, text_id FROM paragraph WHERE id = ?;";
+            try (PreparedStatement searchPS = conexion.prepareStatement(textSelect)) {
+                //Obtener los textos uno a uno para no desbordar la pila.
+                searchPS.setInt(1, paragraphID);
+                try (ResultSet searchRS = searchPS.executeQuery()) {
+                    while (searchRS.next()) {
+                        String content = searchRS.getString("content");
+                        ArrayList<String> discourses = new ArrayList<>();
+                        int textID = searchRS.getInt("text_id");
+                        try (PreparedStatement discoursesPS = conexion.prepareStatement("SELECT dis.code "
+                                + "FROM corpus.discourse_texts dt, corpus.text txt, corpus.discourse dis "
+                                + "WHERE dt.text_id = txt.id AND dt.discourse_id = dis.id AND txt.id = ?;")) {
+                            discoursesPS.setDouble(1, textID);
+                            try (ResultSet discoursesRS = discoursesPS.executeQuery()) {
+                                while (discoursesRS.next()) {
+                                    discourses.add(discoursesRS.getString("code"));
                                 }
                             }
-                            _obtainNGramas(textID, paragraphID, content, size, discourses, indexer);
                         }
+                        _obtainNGramas(textID, paragraphID, content, size, discourses, indexer);
                     }
                 }
-                if (++counter % 10000 == 0) {
-                    String salida = "Indexando ngramas de los textos " + counter + " a " + (counter + 10000) + "\n";
-                    FileUtils.writeStringToFile(logFile, salida, true);
-                }
+            }
+            if (++counter % 10000 == 0) {
+                String salida = "Indexando ngramas de los textos " + counter + " a " + (counter + 10000) + "\n";
+                FileUtils.writeStringToFile(logFile, salida, true);
             }
         }
+        indexer.close();
     }
 
     private void _obtainNGramas(int textID, int paragraphID, String content, int size, ArrayList<String> discourses, Indexer indexer) throws IOException {
@@ -240,7 +236,7 @@ public class Indexer implements Closeable {
             String a2 = (i + skip + 2) >= words.length ? "" : words[i + skip + 2];
             String a3 = (i + skip + 3) >= words.length ? "" : words[i + skip + 3];
             String a4 = (i + skip + 4) >= words.length ? "" : words[i + skip + 4];
-            indexer.indexNGramas(textID, paragraphID, word, discourses, a1.toLowerCase(), a2.toLowerCase(), a3.toLowerCase(), a4.toLowerCase(), b1.toLowerCase(), b2.toLowerCase(), b3.toLowerCase(), b4.toLowerCase());
+            indexer.indexNGramas(textID, paragraphID, word, discourses, a1, a2, a3, a4, b1, b2, b3, b4);
         }
     }
 
@@ -278,17 +274,17 @@ public class Indexer implements Closeable {
         Document doc = new Document();
         doc.add(new IntField("textID", textID, Field.Store.YES));
         doc.add(new IntField("paragraphID", paragraphID, Field.Store.YES));
-        doc.add(new TextField("text", Normalizer.normalize(text, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", ""), Field.Store.NO));
+        doc.add(new TextField("text", text, Field.Store.NO));
         doc.add(new StringField("discourseString", discourse, Field.Store.NO));
         doc.add(new TextField("discourse", discourse, Field.Store.NO));
-        doc.add(new StringField("before4", Normalizer.normalize(b4, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", ""), Field.Store.YES));
-        doc.add(new StringField("before3", Normalizer.normalize(b3, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", ""), Field.Store.YES));
-        doc.add(new StringField("before2", Normalizer.normalize(b2, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", ""), Field.Store.YES));
-        doc.add(new StringField("before1", Normalizer.normalize(b1, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", ""), Field.Store.YES));
-        doc.add(new StringField("after1", Normalizer.normalize(a1, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", ""), Field.Store.YES));
-        doc.add(new StringField("after2", Normalizer.normalize(a2, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", ""), Field.Store.YES));
-        doc.add(new StringField("after3", Normalizer.normalize(a3, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", ""), Field.Store.YES));
-        doc.add(new StringField("after4", Normalizer.normalize(a4, Normalizer.Form.NFD).replaceAll("[^\\p{ASCII}]", ""), Field.Store.YES));
+        doc.add(new StringField("before4", b4, Field.Store.YES));
+        doc.add(new StringField("before3", b3, Field.Store.YES));
+        doc.add(new StringField("before2", b2, Field.Store.YES));
+        doc.add(new StringField("before1", b1, Field.Store.YES));
+        doc.add(new StringField("after1", a1, Field.Store.YES));
+        doc.add(new StringField("after2", a2, Field.Store.YES));
+        doc.add(new StringField("after3", a3, Field.Store.YES));
+        doc.add(new StringField("after4", a4, Field.Store.YES));
         writer.addDocument(doc);
     }
 
@@ -302,9 +298,7 @@ public class Indexer implements Closeable {
      * @throws CorruptIndexException if the index is corrupt.
      * @throws IOException if there is a low-level IO error.
      */
-    @Override
     public void close() throws CorruptIndexException, IOException {
-        writer.commit();
         writer.close();
     }
 }

@@ -19,10 +19,14 @@ public class EnglishIndexer extends Indexer {
      * @param indexPath
      * @throws IOException
      */
-    public EnglishIndexer(String indexPath) throws IOException {
+    public EnglishIndexer(String indexPath, boolean lemma) throws IOException {
         super(indexPath);
-        this.analyzer = new EnglishAnalyzer();
-        this._initializeComponents(indexPath + Config.FILE_SEPARATOR + "en");
+        this.analyzer = new EnglishAnalyzer(lemma);
+        if (lemma) {
+            this._initializeComponents(indexPath + Config.FILE_SEPARATOR + "lemma/en");
+        } else {
+            this._initializeComponents(indexPath + Config.FILE_SEPARATOR + "en");
+        }
     }
     
 }

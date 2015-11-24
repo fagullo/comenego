@@ -17,6 +17,7 @@
         <link rel="StyleSheet" href="css/bootstrap.min.css" type="text/css" media="screen" />
         <link rel="StyleSheet" href="css/bootstrap-theme.min.css" type="text/css" media="screen" />
         <link rel="StyleSheet" href="css/style.css" type="text/css" media="screen" />
+        <link rel="StyleSheet" href="css/jquery.switchButton.css" type="text/css" media="screen" />
         <script src="js/jquery-2.1.0.min.js" type="text/javascript"></script>
         <script src="js/bootstrap.min.js" type="text/javascript"></script>
         <script src="js/underscore-min.js" type="text/javascript"></script>
@@ -24,6 +25,7 @@
         <script src="js/backbone-min.js" type="text/javascript"></script>
         <script src="js/pager.js" type="text/javascript"></script>
         <script src="js/jquery-ui.js" type="text/javascript"></script>
+        <script src="js/jquery.switchButton.js" type="text/javascript"></script>
         <title><fmt:message key="index.title" /></title>
     </head>
     <body>
@@ -37,7 +39,7 @@
             <%
             } else {
             %>
-            <a href="/searcher/services/comenego/logout" class="btn btn-danger" id="login-btn"><i class="glyphicon glyphicon-user"></i>&nbsp;<fmt:message key="index.logout" /></a>
+            <a href="/searcher/services/login/logout" class="btn btn-danger" id="login-btn"><i class="glyphicon glyphicon-user"></i>&nbsp;<fmt:message key="index.logout" /></a>
             <%
                 }
             %>
@@ -52,12 +54,10 @@
                 <div class="tab-content col-md-12 no-padding">
                     <div class="tab-pane active col-md-12 no-padding" id="monolingual">  
                         <form action="javascript:search()" method="POST" class="well form-inline col-md-12" role="form">
-                            <div class="no-padding col-md-12" style="float: left;">
-                                <div class="form-group col-md-10 no-padding left">
-                                    <input type="text" name="search" class="form-control" id="search" placeholder="<fmt:message key="search.text" />">
-                                </div>
-                                <div class="col-md-12 left" style="padding-top: 50px;">
-                                    <div class="form-group col-md-offset-3 left">
+                            <div class="no-padding col-md-12">
+                                <input type="text" name="search" class="form-control" id="search" placeholder="<fmt:message key="search.text" />">
+                                <div class="col-md-12 left" style="padding-top: 10px;">
+                                    <div class="form-group col-md-offset-4 left">
                                         <input type="submit" class="btn btn-primary left" name="create" value="<fmt:message key="search" />" id="create">
                                     </div>
                                     <div class="form-group left">
@@ -66,20 +66,29 @@
                                 </div>
                             </div>
                             <div id="lang-container" class="col-md-12">
-                                <div class="title"><h1><fmt:message key="languages" /></h1></div>
-                                <div class="btn-group col-md-12" data-toggle="buttons">
-                                    <label class="btn btn-default active lang-btn">
-                                        <input type="radio" value="es">
-                                        Castellano
-                                    </label>
-                                    <label class="btn btn-default lang-btn">
-                                        <input type="radio" value="en" >
-                                        English
-                                    </label>
-                                    <label class="btn btn-default lang-btn">
-                                        <input type="radio" value="fr">
-                                        Français
-                                    </label>
+                                <div class="col-md-4">
+                                    <div id="lang-container" class="col-md-12">
+                                        <div class="title"><h1>Lemmatizar</h1></div>
+                                        <input type="checkbox" name="great" id="great">
+                                        <input type="hidden" value="false" name="lemmatizer" id="lemmatizer"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="title"><h1><fmt:message key="languages" /></h1></div>
+                                    <div class="btn-group col-md-12" data-toggle="buttons">
+                                        <label class="btn btn-default active lang-btn">
+                                            <input type="radio" value="es">
+                                            Castellano
+                                        </label>
+                                        <label class="btn btn-default lang-btn">
+                                            <input type="radio" value="en" >
+                                            English
+                                        </label>
+                                        <label class="btn btn-default lang-btn">
+                                            <input type="radio" value="fr">
+                                            Français
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                             <input type="hidden" value="es" name="search-lang" id="search-lang"/>
@@ -193,6 +202,7 @@
             <div id='paginador-letras' class='col-lg-12 col-md-12 col-sm-12 col-xs-12' style="float: left; clear: both;"></div>
         </div>
         <div class="modal"></div>
+
         <footer class="col-md-8 col-md-offset-2">
             <div class="col-md-12">
                 <img src="media/img/logo_generalitat.gif">
@@ -219,5 +229,11 @@
                 </form>
             </div>
         </footer>
+        <script>
+            $("#great").switchButton({
+                on_label: 'yes',
+                off_label: 'no'
+            });
+        </script>
     </body>
 </html>

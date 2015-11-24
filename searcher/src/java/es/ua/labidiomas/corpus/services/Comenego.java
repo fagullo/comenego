@@ -5,33 +5,37 @@
  */
 package es.ua.labidiomas.corpus.services;
 
-import es.ua.labidiomas.corpus.exception.LoginException;
-import es.ua.labidiomas.corpus.searcher.LoginParameters;
+import es.ua.labidiomas.corpus.searcher.LuceneSnippet;
+import es.ua.labidiomas.corpus.searcher.NGramsComparator;
 import es.ua.labidiomas.corpus.searcher.SearchParameters;
+import es.ua.labidiomas.corpus.searcher.SearchResponse;
+import es.ua.labidiomas.corpus.searcher.Searcher;
 import es.ua.labidiomas.corpus.util.Config;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.grouping.GroupDocs;
+import org.apache.lucene.search.grouping.TopGroups;
+import org.apache.lucene.search.highlight.Highlighter;
+import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 
 /**
  * REST Web Service
@@ -41,6 +45,10 @@ import javax.ws.rs.core.UriBuilder;
 @Path("comenego/")
 public class Comenego {
 
+    private Searcher searcher;
+
+    private static final int DOCS_BY_PAGE = 50;
+
     @Context
     private ServletContext context;
 
@@ -48,50 +56,7 @@ public class Comenego {
      * Creates a new instance of Searcher
      */
     public Comenego() {
-    }
-
-    @POST
-    @Path("login")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response login(LoginParameters parameters, @Context HttpServletRequest request, @Context HttpServletResponse response) throws ClassNotFoundException, SQLException, URISyntaxException, LoginException {
-
-        HttpSession session = request.getSession(false);
-        Class.forName("com.mysql.jdbc.Driver");
-        Connection connection = null;
-        try {
-            connection = DriverManager.getConnection(Config.CONEXION_STRING, Config.DB_USER, Config.DB_PASS);
-            PreparedStatement loginPS = connection.prepareStatement("SELECT * FROM user WHERE username = ? AND password = SHA2(?, 256)");
-            loginPS.setString(1, parameters.getName());
-            loginPS.setString(2, parameters.getPassword());
-            ResultSet loginQuery = loginPS.executeQuery();
-            if (loginQuery.next()) {
-                session.setAttribute("userID", parameters.getName());
-            } else {
-                throw new LoginException("<strong>Error!</strong> Nombre de usuario o contraseña incorrectos.");
-            }
-        } finally {
-            if (connection != null) {
-                connection.close();
-            }
-        }
-        return Response.status(200).build();
-    }
-
-    @GET
-    @Path("logout")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response logout(@Context HttpServletRequest request, @Context HttpServletResponse response) throws ClassNotFoundException, SQLException, URISyntaxException, LoginException {
-
-        HttpServletRequest httpServletRequest = (HttpServletRequest) request;
-        HttpServletResponse httpServletResponse = (HttpServletResponse) response;
-        HttpSession session = httpServletRequest.getSession(false);
-
-        if (session.getAttribute("userID") != null) {
-            session.removeAttribute("userID");
-        }
-        return Response.temporaryRedirect(new URI("/searcher")).build();
+        searcher = new Searcher();
     }
 
     /**
@@ -100,56 +65,65 @@ public class Comenego {
      *
      * @param parameters
      * @return an instance of java.lang.String
+     * @throws java.io.IOException
+     * @throws org.apache.lucene.queryparser.classic.ParseException
+     * @throws java.lang.ClassNotFoundException
+     * @throws java.sql.SQLException
+     * @throws org.apache.lucene.search.highlight.InvalidTokenOffsetsException
      */
     @POST
     @Path("load")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response load(SearchParameters parameters) {
+    public Response load(SearchParameters parameters) throws IOException, ParseException, ClassNotFoundException, SQLException, InvalidTokenOffsetsException {
+        SearchResponse result = new SearchResponse();
+        List<LuceneSnippet> snippets = new ArrayList<LuceneSnippet>();
+        Connection connection = null;
+        try {
+            if (parameters.getDiscourses() != null) {
+                Analyzer analyzer = searcher.getAnalyzer(parameters.getLanguages(), parameters.isLemma());
+                IndexSearcher indexSearcher = searcher.prepareIndexSearcher(parameters.getLanguages().get(0), parameters.getSortField(), parameters.getSearch(), parameters.isLemma());
+                BooleanQuery searchQuery = searcher.prepareQuery(parameters.getSearch(), parameters.getDiscourses(), analyzer,
+                        parameters.getSortField(), parameters.getPosition(), parameters.isLetterSearch(), parameters.getLetter(),
+                        parameters.getSubsearch());
+                Highlighter textHighlighter = searcher.prepareHighlighter(searchQuery);
 
-//        HashMap<String, Object> result = new HashMap<String, Object>();
-//        ArrayList<Object> snippets = new ArrayList<Object>();
-//        if (discourses != null) {
-//            Analyzer analyzer = _getAnalyzer(languages);
-//            IndexSearcher indexSearcher = _prepareIndexSearcher(languages[0], sortField, searchText);
-//            BooleanQuery searchQuery = _prepareQuery(searchText, discourses, analyzer, page, sortField, position, isLetter, letter, subSearchText);
-//            Highlighter textHighlighter = _prepareHighlighter(searchQuery);
-//
-//            TopGroups tg;
-//            if (sortField == null || sortField.isEmpty()) {
-//                tg = _prapareResults(searchQuery, indexSearcher, page);
-//            } else {
-//                sortWords = new HashMap<String, String>();
-//                tg = _prapareSortedResults(searchQuery, indexSearcher, page, sortField);
-//            }
-//            if (tg != null) {
-//
-//                GroupDocs[] groupedDocs = tg.groups;
-//                result.put("numPages", Math.ceil(tg.totalGroupedHitCount / DOCS_BY_PAGE));
-//                result.put("numDocs", tg.totalGroupedHitCount);
-//                Class.forName("com.mysql.jdbc.Driver");
-//                conexion = DriverManager.getConnection(Config.CONEXION_STRING, Config.DB_USER, Config.DB_PASS);
-//                GroupDocs groupDoc = groupedDocs[0];
-//                int pageNum = Integer.parseInt(page);
-//                int offset = (pageNum - 1) * DOCS_BY_PAGE;
-//                int numPageResults = pageNum * DOCS_BY_PAGE;
-//                int top = Math.min(groupDoc.scoreDocs.length, numPageResults);
-//                for (int i = offset; i < top; i++) {
-//                    ScoreDoc sd = groupDoc.scoreDocs[i];
-//                    _getSnippets(searchText.length(), snippets, sd, indexSearcher, conexion, analyzer, textHighlighter, sortField, position, letter, isLetter);
-//                }
-//            }
-//        }
-//        result.put("matches", snippets);
-//        if (sortField == null || sortField.isEmpty()) {
-//            result.put("sorted", "false");
-//        } else {
-//            result.put("sorted", "true");
-//        }
-//        JSONObject jObj = new JSONObject();
-//        jObj.putAll(result);
-//        printout.print(jObj);
-//        printout.flush();
-        return Response.status(200).entity(parameters).build();
+                TopGroups tg;
+                tg = searcher.prapareResults(searchQuery, indexSearcher, parameters.getPage());
+                if (tg != null) {
+
+                    GroupDocs[] groupedDocs = tg.groups;
+                    result.setNumPages((int) Math.ceil(tg.totalGroupedHitCount / DOCS_BY_PAGE));
+                    result.setNumDocs(tg.totalGroupedHitCount);
+                    Class.forName("com.mysql.jdbc.Driver");
+                    connection = DriverManager.getConnection(Config.CONEXION_STRING, Config.DB_USER, Config.DB_PASS);
+                    GroupDocs groupDoc = groupedDocs[0];
+                    int offset = (parameters.getPage() - 1) * DOCS_BY_PAGE;
+                    int numPageResults = parameters.getPage() * DOCS_BY_PAGE;
+                    int top = Math.min(groupDoc.scoreDocs.length, numPageResults);
+                    for (int i = offset; i < top; i++) {
+                        ScoreDoc sd = groupDoc.scoreDocs[i];
+                        searcher.getSnippets(parameters.getSearch().length(), snippets, sd, indexSearcher, connection, analyzer, textHighlighter, parameters);
+                    }
+                }
+            }
+            if (parameters.getSortField() != null && !parameters.getSortField().isEmpty()) {
+                Collections.sort(snippets, new NGramsComparator(parameters.getSortField(), parameters.getPosition(), new HashMap<String, String>()));
+                for ( LuceneSnippet sn : snippets ) {
+                    searcher.setSnippet(sn, parameters.getSortField(), parameters.getPosition());
+                }
+            }
+            result.setMatches(snippets);
+            if (parameters.getSortField() == null || parameters.getSortField().isEmpty()) {
+                result.setSorted(false);
+            } else {
+                result.setSorted(true);
+            }
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+        }
+        return Response.status(200).entity(result).build();
     }
 }
