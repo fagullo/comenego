@@ -1,5 +1,8 @@
 var lastSearch = null;
 
+var discoursesMap = ['SCI', 'COM', 'DID', 'LEG', 'ORG', 'PRS', 'TEC'];
+var discoursesSelected = ['SCI', 'COM', 'DID', 'LEG', 'ORG', 'PRS', 'TEC'];
+
 $(document).on({
     ajaxStart: function() {
         $("#pleaseWaitDialog").modal();
@@ -11,6 +14,26 @@ $(document).on({
 });
 
 $(document).ready(function() {
+
+    $('#tags-input').on("change", function(event) {
+        if (event.added) {
+            var index = $.inArray(event.added.id, inputItems);
+            if (index < 0) {
+                var discursesSelected = $(".selectivity-multiple-selected-item");
+                var removeIndex = event.value.length - 1;
+                discursesSelected[removeIndex].remove();
+            } else {
+                var discourseIndex = $.inArray(event.added.id, inputItems);
+                discoursesSelected.push(discoursesMap[discourseIndex]);
+            }
+        } else if (event.removed) {
+            var discourseIndex = $.inArray(event.removed.id, inputItems);
+            var index = discoursesSelected.indexOf(discoursesMap[discourseIndex]);
+            if (index >= 0) {
+                discoursesSelected.splice(index, 1);
+            }
+        }
+    });
 
     $("#lemmatizer-input").change(function() {
         if ($("#lemmatizer").val() === "false") {
@@ -90,7 +113,7 @@ function search(page, letter, subsearch) {
         sortField: $('#search-sort').val(),
         position: $('#skip-grams').val(),
         lemma: $("#lemmatizer").val(),
-        title : $("#title-filter").val()
+        title: $("#title-filter").val()
     };
     if (subsearch && lastSearch != null) {
         data.search = $("#search").val();
@@ -108,14 +131,14 @@ function search(page, letter, subsearch) {
         data: JSON.stringify(data),
         success: function(searchresult) {
             lastSearch = {
-                text : $("#search").val(),
+                text: $("#search").val(),
             };
             if ($("#title-filter").val() === "false") {
                 lastSearch.field = "text";
             } else {
                 lastSearch.field = "title";
             }
-            
+
             if (!searchresult.matches || searchresult.matches.length === 0) {
                 $("#paginador").html("");
                 $("#hits").html(

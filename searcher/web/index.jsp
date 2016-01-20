@@ -67,10 +67,17 @@
                             </div>
                             <div id="lang-container" class="col-md-12">
                                 <div class="col-md-4">
-                                    <div id="lang-container" class="col-md-12">
-                                        <div class="title"><h1>Lemmatizar</h1></div>
-                                        <input type="checkbox" name="great" id="great">
+                                    <div id="lemmatizer-container" class="col-md-12">
+                                        <div class="title"><h1><fmt:message key="search.lemmatize" /></h1></div>
+                                        <input type="checkbox" name="lemmatizer-input" id="lemmatizer-input">
                                         <input type="hidden" value="false" name="lemmatizer" id="lemmatizer"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div id="title-container" class="col-md-12">
+                                        <div class="title"><h1><fmt:message key="search.title" /></h1></div>
+                                        <input type="checkbox" name="title-input" id="title-input">
+                                        <input type="hidden" value="false" name="title-filter" id="title-filter"/>
                                     </div>
                                 </div>
                                 <div class="col-md-8">
@@ -230,9 +237,13 @@
             </div>
         </footer>
         <script>
-            $("#great").switchButton({
-                on_label: 'yes',
-                off_label: 'no'
+            $("#lemmatizer-input").switchButton({
+                on_label: '<fmt:message key="yes" />',
+                off_label: '<fmt:message key="no" />'
+            });
+            $("#title-input").switchButton({
+                on_label: '<fmt:message key="yes" />',
+                off_label: '<fmt:message key="no" />'
             });
         </script>
     </body>

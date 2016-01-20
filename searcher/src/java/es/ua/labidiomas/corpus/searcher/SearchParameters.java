@@ -17,11 +17,12 @@ public class SearchParameters {
     private List<String> languages;
     private String letter;
     private Integer page = 1;
-    private String position;
+    private Integer position;
     private String search;
     private String sortField;
-    private String subsearch;
+    private SubSearch subsearch;
     private boolean lemma = false;
+    private boolean title = false;
 
     public SearchParameters() {
     }
@@ -34,11 +35,11 @@ public class SearchParameters {
         this.search = search;
     }
 
-    public String getSubsearch() {
+    public SubSearch getSubsearch() {
         return subsearch;
     }
 
-    public void setSubsearch(String subsearch) {
+    public void setSubsearch(SubSearch subsearch) {
         this.subsearch = subsearch;
     }
 
@@ -66,11 +67,11 @@ public class SearchParameters {
         this.letter = letter;
     }
 
-    public String getPosition() {
+    public Integer getPosition() {
         return position;
     }
 
-    public void setPosition(String position) {
+    public void setPosition(Integer position) {
         this.position = position;
     }
 
@@ -93,6 +94,10 @@ public class SearchParameters {
     public boolean isLetterSearch() {
         return letter != null && !letter.isEmpty() && !letter.equals("null");
     }
+    
+    public boolean isSubSearch() {
+        return subsearch != null && subsearch.getText() != null && !subsearch.getText().trim().isEmpty() &&  !subsearch.getText().equals("null");
+    }
 
     public boolean isLemma() {
         return lemma;
@@ -100,5 +105,13 @@ public class SearchParameters {
 
     public void setLemma(boolean lemma) {
         this.lemma = lemma;
+    }
+
+    public boolean isTitle() {
+        return title;
+    }
+
+    public void setTitle(boolean title) {
+        this.title = title;
     }
 }

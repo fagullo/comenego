@@ -61,8 +61,6 @@ public class Indexer implements Closeable {
      */
     public static final File logFile = new File("config/log.txt");
 
-    private static final int NGRAM_SIZE = 4;
-
     /**
      * @param args the command line arguments
      */
@@ -81,6 +79,14 @@ public class Indexer implements Closeable {
      */
     public Indexer(String indexPath) throws IOException {
         this.indexPath = indexPath;
+    }
+
+    protected void _initializeComponents(String indexPath) throws IOException {
+        File indexDir = new File(indexPath);
+        Directory directory = FSDirectory.open(indexDir);
+        IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_47, analyzer);
+        config.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+        writer = new IndexWriter(directory, config);
     }
 
     /**
@@ -125,24 +131,16 @@ public class Indexer implements Closeable {
                     Element index = (Element) indexes.item(i);
                     String type = index.getAttribute("type");
                     switch (type) {
-                        case "ngram":
-//                            for (int size = 1; size <= NGRAM_SIZE; size++) {
-//                                _indexNGramas(connection, texts, lang, size, true);
-//                                texts.first();
-//                                _indexNGramas(connection, texts, lang, size, false);
-//                                texts.first();
-//                            }
-                            break;
                         case "paragraph":
                             _indexTexts(connection, texts, lang, true);
                             texts.first();
                             _indexTexts(connection, texts, lang, false);
                             break;
                         case "title":
-//                            _indexTitle(connection, lang);
+                            _indexTitle(connection, lang, true);
+                            _indexTitle(connection, lang, false);
                             break;
                     }
-                    texts.first();
                 }
             }
         }
@@ -150,15 +148,16 @@ public class Indexer implements Closeable {
 
     private void _indexTexts(Connection conexion, ResultSet texts, String lang, boolean lemma) throws SQLException, IOException {
         int counter = 0;
-        try (Indexer indexer = IndexerFactory.getInstance().getIndexer(lang, lemma)) {
+        try (Indexer indexer = IndexerFactory.getInstance().getIndexer(lang, lemma, false)) {
             while (texts.next()) {
                 int paragraphID = texts.getInt("id");
-                String textSelect = "SELECT content, text_id FROM paragraph WHERE id = ?;";
+                String textSelect = "SELECT p.content, p.text_id, t.title FROM paragraph p, text t WHERE p.id = ? AND p.text_id = t.id;";
                 try (PreparedStatement searchPS = conexion.prepareStatement(textSelect)) {//Obtener los textos uno a uno para no desbordar la pila.
                     searchPS.setInt(1, paragraphID);
                     try (ResultSet searchRS = searchPS.executeQuery()) {
                         while (searchRS.next()) {
                             String content = searchRS.getString("content");
+                            String title = searchRS.getString("title");
                             ArrayList<String> discourses = new ArrayList<>();
                             int textID = searchRS.getInt("text_id");
                             try (PreparedStatement discoursesPS = conexion.prepareStatement("SELECT dis.code "
@@ -171,7 +170,7 @@ public class Indexer implements Closeable {
                                     }
                                 }
                             }
-                            indexer.index(textID, paragraphID, content, discourses);
+                            indexer.index(textID, paragraphID, content, discourses, title);
 
                         }
                     }
@@ -184,72 +183,24 @@ public class Indexer implements Closeable {
         }
     }
 
-    private void _indexNGramas(Connection conexion, ResultSet texts, String lang, int size, boolean lemma) throws SQLException, IOException {
-        FileUtils.writeStringToFile(logFile, "Creando nGramas para " + lang + "\n", true);
-        try (Indexer indexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, size, lemma)) {
-            int counter = 0;
-            while (texts.next()) {
-                int paragraphID = texts.getInt("id");
-                String textSelect = "SELECT content, text_id FROM paragraph WHERE id = ?;";
-                try (PreparedStatement searchPS = conexion.prepareStatement(textSelect)) {
-                    //Obtener los textos uno a uno para no desbordar la pila.
-                    searchPS.setInt(1, paragraphID);
-                    try (ResultSet searchRS = searchPS.executeQuery()) {
-                        while (searchRS.next()) {
-                            String content = searchRS.getString("content");
-                            ArrayList<String> discourses = new ArrayList<>();
-                            int textID = searchRS.getInt("text_id");
-                            try (PreparedStatement discoursesPS = conexion.prepareStatement("SELECT dis.code "
-                                    + "FROM corpus.discourse_texts dt, corpus.text txt, corpus.discourse dis "
-                                    + "WHERE dt.text_id = txt.id AND dt.discourse_id = dis.id AND txt.id = ?;")) {
-                                discoursesPS.setDouble(1, textID);
-                                try (ResultSet discoursesRS = discoursesPS.executeQuery()) {
-                                    while (discoursesRS.next()) {
-                                        discourses.add(discoursesRS.getString("code"));
-                                    }
-                                }
-                            }
-                            _obtainNGramas(textID, paragraphID, content, size, discourses, indexer);
-                        }
-                    }
-                }
-                if (++counter % 10000 == 0) {
-                    String salida = "Indexando ngramas de los textos " + counter + " a " + (counter + 10000) + "\n";
-                    FileUtils.writeStringToFile(logFile, salida, true);
-                }
-            }
+    /**
+     * Index text
+     *
+     * @param textID the ID of the text.
+     * @param title
+     * @throws CorruptIndexException if the index is corrupt.
+     * @throws IOException if there is a low-level IO error.
+     */
+    public void indexTitle(int textID, String title, ArrayList<String> discourses) throws CorruptIndexException, IOException {
+//        String discourse = StringUtils.join(discourses, " ");
+        Document doc = new Document();
+        doc.add(new IntField("textID", textID, Field.Store.YES));
+        doc.add(new TextField("title", title, Field.Store.NO));
+        for (String discourse : discourses) {
+            doc.add(new StringField("discourseString", discourse, Field.Store.NO));
+            doc.add(new TextField("discourse", discourse, Field.Store.NO));
         }
-    }
-
-    private void _obtainNGramas(int textID, int paragraphID, String content, int size, ArrayList<String> discourses, Indexer indexer) throws IOException {
-
-        String words[] = content.split("\\s+");
-        int skip = size - 1;
-
-        for (int i = 0; (i + skip) < words.length; i++) {
-            String word = "";
-            for (int j = i; j < (size + i); j++) {
-                word += words[j] + " ";
-            }
-            word = word.trim();
-            String b1 = (i - 1) < 0 ? "" : words[i - 1];
-            String b2 = (i - 2) < 0 ? "" : words[i - 2];
-            String b3 = (i - 3) < 0 ? "" : words[i - 3];
-            String b4 = (i - 4) < 0 ? "" : words[i - 4];
-            String a1 = (i + skip + 1) >= words.length ? "" : words[i + skip + 1];
-            String a2 = (i + skip + 2) >= words.length ? "" : words[i + skip + 2];
-            String a3 = (i + skip + 3) >= words.length ? "" : words[i + skip + 3];
-            String a4 = (i + skip + 4) >= words.length ? "" : words[i + skip + 4];
-            indexer.indexNGramas(textID, paragraphID, word, discourses, a1.toLowerCase(), a2.toLowerCase(), a3.toLowerCase(), a4.toLowerCase(), b1.toLowerCase(), b2.toLowerCase(), b3.toLowerCase(), b4.toLowerCase());
-        }
-    }
-
-    protected void _initializeComponents(String indexPath) throws IOException {
-        File indexDir = new File(indexPath);
-        Directory directory = FSDirectory.open(indexDir);
-        IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_47, analyzer);
-        config.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
-        writer = new IndexWriter(directory, config);
+        writer.addDocument(doc);
     }
 
     /**
@@ -259,17 +210,22 @@ public class Indexer implements Closeable {
      * @param paragraphID the ID of te paragraph.
      * @param text text to index.
      * @param discourses list of discourses.
+     * @param title
      * @throws CorruptIndexException if the index is corrupt.
      * @throws IOException if there is a low-level IO error.
      */
-    public void index(int textID, int paragraphID, String text, ArrayList<String> discourses) throws CorruptIndexException, IOException {
-        String discourse = StringUtils.join(discourses, " ");
+    public void index(int textID, int paragraphID, String text, ArrayList<String> discourses, String title) throws CorruptIndexException, IOException {
+//        String discourse = StringUtils.join(discourses, " ");
         Document doc = new Document();
         doc.add(new IntField("textID", textID, Field.Store.YES));
         doc.add(new IntField("paragraphID", paragraphID, Field.Store.YES));
         doc.add(new TextField("text", text, Field.Store.NO));
-        doc.add(new StringField("discourseString", discourse, Field.Store.NO));
-        doc.add(new TextField("discourse", discourse, Field.Store.NO));
+        doc.add(new TextField("text", title, Field.Store.NO));
+        doc.add(new TextField("title", title, Field.Store.NO));
+        for (String discourse : discourses) {
+            doc.add(new StringField("discourseString", discourse, Field.Store.NO));
+            doc.add(new TextField("discourse", discourse, Field.Store.NO));
+        }
         writer.addDocument(doc);
     }
 
@@ -294,6 +250,41 @@ public class Indexer implements Closeable {
 
     public void commit() throws IOException {
         writer.commit();
+    }
+
+    private void _indexTitle(Connection conexion, String lang, boolean lemma) throws SQLException, IOException {
+        int counter = 0;
+        try (Indexer indexer = IndexerFactory.getInstance().getIndexer(lang, lemma, true)) {
+            String textSelect = "SELECT t.id, t.title FROM text t, language l WHERE language_id = l.id AND l.shortname = ?;";
+            try (PreparedStatement searchPS = conexion.prepareStatement(textSelect)) {//Obtener los textos uno a uno para no desbordar la pila.
+                searchPS.setString(1, lang);
+                try (ResultSet searchRS = searchPS.executeQuery()) {
+                    while (searchRS.next()) {
+                        String title = searchRS.getString("title");
+                        int textID = searchRS.getInt("id");
+
+                        ArrayList<String> discourses = new ArrayList<>();
+                        try (PreparedStatement discoursesPS = conexion.prepareStatement("SELECT dis.code "
+                                + "FROM corpus.discourse_texts dt, corpus.text txt, corpus.discourse dis "
+                                + "WHERE dt.text_id = txt.id AND dt.discourse_id = dis.id AND txt.id = ?;")) {
+                            discoursesPS.setDouble(1, textID);
+                            try (ResultSet discoursesRS = discoursesPS.executeQuery()) {
+                                while (discoursesRS.next()) {
+                                    discourses.add(discoursesRS.getString("code"));
+                                }
+                            }
+                        }
+
+                        indexer.indexTitle(textID, title, discourses);
+
+                    }
+                }
+                if (++counter % 10000 == 0) {
+                    String salida = "Indexando textos de " + counter + " a " + (counter + 10000) + "\n";
+                    FileUtils.writeStringToFile(logFile, salida, true);
+                }
+            }
+        }
     }
 
     /**

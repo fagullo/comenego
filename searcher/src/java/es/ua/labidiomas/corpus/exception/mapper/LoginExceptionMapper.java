@@ -21,6 +21,6 @@ public class LoginExceptionMapper implements ExceptionMapper<LoginException>{
 
     @Override
     public Response toResponse(LoginException e) {
-        return Response.status(412).entity(e.getMessage()).type(MediaType.TEXT_PLAIN).build();
+        return Response.status(401).entity(e.getMessage()).type(MediaType.TEXT_PLAIN).build();
     }
 }

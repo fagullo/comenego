@@ -14,19 +14,15 @@ import java.util.HashMap;
  */
 public class NGramsComparator implements Comparator<LuceneSnippet> {
 
-    private String order;
-    private String position;
-    private HashMap<String, String> sortWords;
+    private final String order;
+    private final int position;
+    private final HashMap<String, String> sortWords;
 
-    public NGramsComparator(String order, String position, HashMap<String, String> sortWords) {
+    public NGramsComparator(String order, int position, HashMap<String, String> sortWords) {
         this.order = order;
         this.position = position;
         this.sortWords = sortWords;
     }
-    
-    
-
-    
     
     @Override
     public int compare(LuceneSnippet o1, LuceneSnippet o2) {
@@ -42,21 +38,21 @@ public class NGramsComparator implements Comparator<LuceneSnippet> {
         String word;
         if (order.equals("before")) {
             text = " " + text;
-            if (position.equals("1")) {
+            if (position == 1 ) {
                 word = text.replaceAll(".* (\\S+) <b>.*", "$1");
-            } else if (position.equals("2")) {
+            } else if (position == 2) {
                 word = text.replaceAll(".* (\\S+) (\\S+) <b>.*", "$1");
-            } else if (position.equals("3")) {
+            } else if (position == 3) {
                 word = text.replaceAll(".* (\\S+) (\\S+) (\\S+) <b>.*", "$1");
             } else {
                 word = text.replaceAll(".* (\\S+) (\\S+) (\\S+) (\\S+) <b>.*", "$1");
             }
         } else {
-            if (position.equals("1")) {
+            if (position == 1) {
                 word = text.replaceAll(".*</b>[\\S]* (\\S+).*", "$1");
-            } else if (position.equals("2")) {
+            } else if (position == 2) {
                 word = text.replaceAll(".*</b>[\\S]* (\\S+) (\\S+).*", "$2");
-            } else if (position.equals("3")) {
+            } else if (position == 3 ) {
                 word = text.replaceAll(".*</b>[\\S]* (\\S+) (\\S+) (\\S+).*", "$3");
             } else {
                 word = text.replaceAll(".*</b>[\\S]* (\\S+) (\\S+) (\\S+) (\\S+).*", "$4");

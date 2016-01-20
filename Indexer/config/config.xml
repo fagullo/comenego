@@ -7,21 +7,22 @@
     <db_user>corpus</db_user>
     <db_pass>vffglg</db_pass>
     <!--<indexes_path>index</indexes_path>-->
+    <!--<indexes_path>new_index</indexes_path>-->
     <indexes_path>/home/paco/Documentos/comenego/index</indexes_path>
     <log_file>log/corpus.out</log_file>
     
     <indexconfig>
         <lang id="es">
-            <index type="ngram"/>
             <index type="paragraph"/>
+            <index type="title"/>
         </lang>
         <lang id="en">
-            <index type="ngram"/>
             <index type="paragraph"/>
+            <index type="title"/>
         </lang>
         <lang id="fr">
-            <index type="ngram"/>
             <index type="paragraph"/>
+            <index type="title"/>
         </lang>
     </indexconfig>
 </config>
