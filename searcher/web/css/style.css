@@ -28,10 +28,23 @@ footer, header {
     padding-right: 0 !important;
 }
 
+#form-container {
+    -webkit-border-radius: 15px;
+    -moz-border-radius: 15px;
+    border-radius: 15px;
+    border: 1px solid red;
+    float: left;
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+
+#content {
+    float: left;
+}
 
 /***
 Start by setting display:none to make this hidden.
-Then we position it in relation to the viewport window
+Then we position it in relation to the viewport wi  ndow
 with position:fixed. Width, height, top and left speak
 speak for themselves. Background we set to 80% white with
 our animation centered, and no-repeating */

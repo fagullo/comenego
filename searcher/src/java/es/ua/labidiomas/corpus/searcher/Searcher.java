@@ -28,6 +28,7 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -43,6 +44,11 @@ import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleFragmenter;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.apache.lucene.search.highlight.TextFragment;
+import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanNotQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
@@ -56,7 +62,7 @@ public class Searcher {
 
     private static final int DOCS_BY_PAGE = 50;
 
-    public List<LuceneSnippet> getSnippets(int termSize, List<LuceneSnippet> snippets, ScoreDoc sd, IndexSearcher indexSearcher, Connection connection, Analyzer analyzer, Highlighter textHighlighter, SearchParameters params) throws IOException, SQLException, InvalidTokenOffsetsException {
+    public List<LuceneSnippet> getTextSnippets(int termSize, List<LuceneSnippet> snippets, ScoreDoc sd, IndexSearcher indexSearcher, Connection connection, Analyzer analyzer, Highlighter textHighlighter, SearchParameters params) throws IOException, SQLException, InvalidTokenOffsetsException {
         Document doc = indexSearcher.doc(sd.doc);
         int paragraphID = Integer.parseInt(doc.get("paragraphID"));
         int textID = Integer.parseInt(doc.get("textID"));
@@ -77,19 +83,18 @@ public class Searcher {
             discourseRS.close();
             discoursePS.close();
 
-            LuceneSnippet result = null;
+            LuceneSnippet result = new LuceneSnippet();
             TokenStream tokenStream = analyzer.tokenStream("text", textRS.getString("content"));
             String url = textRS.getString("url");
             org.apache.lucene.search.highlight.TextFragment[] fragments = textHighlighter.getBestTextFragments(tokenStream, textRS.getString("content"), false, 600);
             for (TextFragment frag : fragments) {
-                if (frag.getScore() > 0 && result == null) {
+                if (frag.getScore() > 0) {
                     String snippet = frag.toString().replaceAll("[\n\r]", "").replaceAll("</b> <b>", " ").trim();
                     int numMatches = StringUtils.countMatches(snippet, "<b>");
-                    if (numMatches > 1) {
+                    if (numMatches > 1 && !params.isSubSearch()) {
                         int start = 0;
                         int end = 0;
                         for (int i = 0; i < numMatches; i++) {
-                            result = new LuceneSnippet();
                             if (i == (numMatches - 1)) {
                                 result.setSnippet(snippet.substring(start));
                             } else {
@@ -103,15 +108,12 @@ public class Searcher {
                             result.setDiscourses(discourses);
                             start = end;
                             snippets.add(result);
-                            result = null;
                         }
                     } else if (snippet.length() > termSize) {
-                        if (result != null) {
-                            result.setSnippet(snippet);
-                            result.setUrl(url);
-                            result.setDiscourses(discourses);
-                            snippets.add(result);
-                        }
+                        result.setSnippet(snippet);
+                        result.setUrl(url);
+                        result.setDiscourses(discourses);
+                        snippets.add(result);
                     }
                 }
             }
@@ -120,6 +122,74 @@ public class Searcher {
         textPS.close();
 
         return snippets;
+    }
+
+    public List<LuceneSnippet> getTitleSnippets(int termSize, List<LuceneSnippet> snippets, ScoreDoc sd, IndexSearcher indexSearcher, Connection connection, Analyzer analyzer, Highlighter textHighlighter, SearchParameters params) throws IOException, SQLException, InvalidTokenOffsetsException {
+        Document doc = indexSearcher.doc(sd.doc);
+        int textID = Integer.parseInt(doc.get("textID"));
+        PreparedStatement textPS = connection.prepareStatement("SELECT t.title, t.url FROM text t WHERE t.id = ?;");
+        textPS.setDouble(1, textID);
+        ResultSet textRS = textPS.executeQuery();
+        if (textRS.next()) {
+            String discourses = "";
+            String discorusesQuery = "SELECT d.code as name FROM discourse_texts dt, discourse d"
+                    + " WHERE dt.text_id = ? AND d.id = dt.discourse_id;";
+            PreparedStatement discoursePS = connection.prepareStatement(discorusesQuery);
+            discoursePS.setDouble(1, textID);
+            ResultSet discourseRS = discoursePS.executeQuery();
+            while (discourseRS.next()) {
+                discourses += discourseRS.getString("name") + " ";
+            }
+            discourseRS.close();
+            discoursePS.close();
+
+            LuceneSnippet result = new LuceneSnippet();
+            TokenStream tokenStream = analyzer.tokenStream("title", textRS.getString("title"));
+            String url = textRS.getString("url");
+            org.apache.lucene.search.highlight.TextFragment[] fragments = textHighlighter.getBestTextFragments(tokenStream, textRS.getString("title"), false, 600);
+            for (TextFragment frag : fragments) {
+                if (frag.getScore() > 0) {
+                    String snippet = frag.toString().replaceAll("[\n\r]", "").replaceAll("</b> <b>", " ").trim();
+                    int numMatches = StringUtils.countMatches(snippet, "<b>");
+                    if (numMatches > 1) {
+                        int start = 0;
+                        int end = 0;
+                        for (int i = 0; i < numMatches; i++) {
+                            if (i == (numMatches - 1)) {
+                                result.setSnippet(snippet.substring(start));
+                            } else {
+                                int coincidence = snippet.indexOf("</b>", start) + 4;
+                                int next = snippet.indexOf("<b>", coincidence);
+                                end = (coincidence + next) / 2;
+                                end = snippet.indexOf(" ", end);
+                                result.setSnippet(snippet.substring(start, end));
+                            }
+                            result.setUrl(url);
+                            result.setDiscourses(discourses);
+                            start = end;
+                            snippets.add(result);
+                        }
+                    } else if (snippet.length() > termSize) {
+                        result.setSnippet(snippet);
+                        result.setUrl(url);
+                        result.setDiscourses(discourses);
+                        snippets.add(result);
+                    }
+                }
+            }
+        }
+        textRS.close();
+        textPS.close();
+
+        return snippets;
+    }
+
+    public List<LuceneSnippet> getSnippets(int termSize, List<LuceneSnippet> snippets, ScoreDoc sd, IndexSearcher indexSearcher, Connection connection, Analyzer analyzer, Highlighter textHighlighter, SearchParameters params) throws IOException, SQLException, InvalidTokenOffsetsException {
+        if (params.isTitle()) {
+            return getTitleSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter, params);
+        } else {
+            return getTextSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter, params);
+        }
     }
 
     /**
@@ -157,15 +227,23 @@ public class Searcher {
     /**
      * Prepares the index searcher to read the indexes in the indexes directory.
      *
+     * @param language
+     * @param sort
+     * @param searchText
+     * @param title
+     * @param lemma
      * @return @throws IOException
      */
-    public IndexSearcher prepareIndexSearcher(String language, String sort, String searchText, boolean lemma) throws IOException {
+    public IndexSearcher prepareIndexSearcher(String language, String sort, String searchText, boolean lemma, boolean title) throws IOException {
         File indexDir;
-        int size = searchText.split("\\s+").length;
+        String baseIndexDir = Config.INDEXES_PATH + Config.FILE_SEPARATOR;
+        if (title) {
+            baseIndexDir += "title" + Config.FILE_SEPARATOR;
+        }
         if (lemma) {
-            indexDir = new File(Config.INDEXES_PATH + Config.FILE_SEPARATOR + "lemma" + Config.FILE_SEPARATOR + language);
+            indexDir = new File(baseIndexDir + "lemma" + Config.FILE_SEPARATOR + language);
         } else {
-            indexDir = new File(Config.INDEXES_PATH + Config.FILE_SEPARATOR + language);
+            indexDir = new File(baseIndexDir + language);
         }
         if (!indexDir.isDirectory() || !indexDir.canRead()) {
             throw new IOException("Can not read the index path at '" + Config.INDEXES_PATH + "'");
@@ -191,9 +269,11 @@ public class Searcher {
      * @return a boolean query which contains all the search criteria.
      * @throws org.apache.lucene.queryparser.classic.ParseException
      */
-    public BooleanQuery prepareQuery(String searchText, String discourses, Analyzer analyzer, String sortField, String position, boolean isLetter, String letter, String subSearch) throws ParseException {
+    public BooleanQuery prepareQuery(String searchText, String discourses, Analyzer analyzer, String sortField, int position, boolean isLetter, String letter, SubSearch subSearch, boolean isTitle) throws ParseException {
         if (isLetter) {
-            return _prepareLetterQuery(searchText, discourses, analyzer, letter, sortField, position);
+            return _prepareLetterQuery(searchText, discourses, analyzer, letter, position);
+        } else if (isTitle) {
+            return _prepareTitleQuery(searchText, discourses, analyzer);
         } else {
             if (subSearch != null) {
                 return _prepareQuerySubSearch(searchText, subSearch, discourses, analyzer);
@@ -203,18 +283,17 @@ public class Searcher {
         }
     }
 
-    private BooleanQuery _prepareLetterQuery(String searchText, String discourses, Analyzer analyzer, String letter, String sortField, String position) throws ParseException {
+    private BooleanQuery _prepareTitleQuery(String searchText, String discourses, Analyzer analyzer) throws ParseException {
         BooleanQuery searchQuery = new BooleanQuery();
 
         BooleanQuery textBooleanQuery = new BooleanQuery();
-        QueryParser textParser = new QueryParser(Version.LUCENE_47, "text", analyzer);
-        Query textQuery = textParser.parse(searchText);
-        textBooleanQuery.add(textQuery, BooleanClause.Occur.MUST);
-        searchQuery.add(textBooleanQuery, BooleanClause.Occur.MUST);
-
-        textBooleanQuery = new BooleanQuery();
-        textParser = new QueryParser(Version.LUCENE_47, sortField + position, analyzer);
-        textQuery = textParser.parse(letter + "*");
+        QueryParser textParser = new QueryParser(Version.LUCENE_47, "title", analyzer);
+        Query textQuery;
+        if (searchText.startsWith("\"")) {
+            textQuery = textParser.parse(searchText);
+        } else {
+            textQuery = textParser.parse("\"" + searchText + "\"");
+        }
         textBooleanQuery.add(textQuery, BooleanClause.Occur.MUST);
         searchQuery.add(textBooleanQuery, BooleanClause.Occur.MUST);
 
@@ -223,20 +302,68 @@ public class Searcher {
         Query discourseQuery = discourseParser.parse(discourses);
         discourseBooleanQuery.add(discourseQuery, BooleanClause.Occur.MUST);
         searchQuery.add(discourseBooleanQuery, BooleanClause.Occur.MUST);
+        return searchQuery;
+    }
+
+    private BooleanQuery _prepareLetterQuery(String searchText, String discourses, Analyzer analyzer, String letter, int position) throws ParseException {
+        BooleanQuery searchQuery = new BooleanQuery();
+
+        SpanQuery prefixQUery = new SpanMultiTermQueryWrapper(new PrefixQuery(new Term("text", letter)));
+
+        SpanNearQuery spanNear1 = new SpanNearQuery(new SpanQuery[]{
+            new SpanTermQuery(new Term("text", searchText)),
+            prefixQUery
+        }, position - 1, true);
+
+        if (position != 1) {
+            SpanNearQuery spanNear2 = new SpanNearQuery(new SpanQuery[]{
+                new SpanTermQuery(new Term("text", searchText)),
+                prefixQUery
+            }, position - 2, true);
+
+            SpanNotQuery textQUery = new SpanNotQuery(spanNear1, spanNear2);
+
+            searchQuery.add(textQUery, BooleanClause.Occur.MUST);
+        } else {
+            searchQuery.add(spanNear1, BooleanClause.Occur.MUST);
+        }
+
+        BooleanQuery discourseBooleanQuery = new BooleanQuery();
+        QueryParser discourseParser = new QueryParser(Version.LUCENE_47, "discourse", analyzer);
+        Query discourseQuery = discourseParser.parse(discourses);
+        discourseBooleanQuery.add(discourseQuery, BooleanClause.Occur.MUST);
+        searchQuery.add(discourseBooleanQuery, BooleanClause.Occur.MUST);
 
         return searchQuery;
+    }
+
+    private BooleanQuery _prepareStandardQuery(String searchText, Analyzer analyzer) throws ParseException {
+        BooleanQuery textBooleanQuery = new BooleanQuery();
+        QueryParser textParser = new QueryParser(Version.LUCENE_47, "text", analyzer);
+        Query textQuery;
+        textQuery = textParser.parse(searchText);
+        textBooleanQuery.add(textQuery, BooleanClause.Occur.MUST);
+        return textBooleanQuery;
+    }
+
+    private BooleanQuery _prepareQuotesQuery(String searchText) throws ParseException {
+        BooleanQuery textBooleanQuery = new BooleanQuery();
+        
+        String text = searchText.substring(1, searchText.length() - 1);
+        String[] words = text.split(" ");
+        textBooleanQuery.add(_prepareSpanQuery(words, "text", 0), BooleanClause.Occur.MUST);
+        
+        return textBooleanQuery;
     }
 
     private BooleanQuery _prepareQuery(String searchText, String discourses, Analyzer analyzer) throws ParseException {
         BooleanQuery searchQuery = new BooleanQuery();
 
-        BooleanQuery textBooleanQuery = new BooleanQuery();
-        QueryParser textParser = new QueryParser(Version.LUCENE_47, "text", analyzer);
-        Query textQuery = textParser.parse(searchText);
-        textBooleanQuery.add(textQuery, BooleanClause.Occur.MUST);
-
-//        Query textBooleanQuery = new TermQuery(new Term("text", searchText));
-        searchQuery.add(textBooleanQuery, BooleanClause.Occur.MUST);
+        if (searchText.startsWith("\"") && searchText.endsWith("\"")) {
+            searchQuery.add(_prepareQuotesQuery(searchText), BooleanClause.Occur.MUST);
+        } else {
+            searchQuery.add(_prepareStandardQuery(searchText, analyzer), BooleanClause.Occur.MUST);
+        }
 
         BooleanQuery discourseBooleanQuery = new BooleanQuery();
         QueryParser discourseParser = new QueryParser(Version.LUCENE_47, "discourse", analyzer);
@@ -247,28 +374,38 @@ public class Searcher {
         return searchQuery;
     }
 
-    private BooleanQuery _prepareQuerySubSearch(String searchText, String lastSearch, String discourses, Analyzer analyzer) throws ParseException {
+    private BooleanQuery _prepareQuerySubSearch(String searchText, SubSearch lastSearch, String discourses, Analyzer analyzer) throws ParseException {
         BooleanQuery searchQuery = new BooleanQuery();
+        
+        SpanQuery[] clauses = new SpanQuery[]{
+            new SpanTermQuery(new Term(searchText, "text")),
+            new SpanTermQuery(new Term(lastSearch.getText(), lastSearch.getField()))
+        };
+        
+        searchQuery.add(_prepareSpanQuery(clauses, Integer.MAX_VALUE), BooleanClause.Occur.MUST);
 
-        BooleanQuery textBooleanQuery = new BooleanQuery();
-        QueryParser textParser = new QueryParser(Version.LUCENE_47, "text", analyzer);
-        Query textQuery = textParser.parse(searchText);
-        textBooleanQuery.add(textQuery, BooleanClause.Occur.MUST);
-
-        searchQuery.add(textBooleanQuery, BooleanClause.Occur.MUST);
-
-        Query text2Query = textParser.parse(lastSearch);
-        textBooleanQuery.add(text2Query, BooleanClause.Occur.MUST);
-
-        searchQuery.add(textBooleanQuery, BooleanClause.Occur.MUST);
-
-        BooleanQuery discourseBooleanQuery = new BooleanQuery();
         QueryParser discourseParser = new QueryParser(Version.LUCENE_47, "discourse", analyzer);
         Query discourseQuery = discourseParser.parse(discourses);
-        discourseBooleanQuery.add(discourseQuery, BooleanClause.Occur.MUST);
-        searchQuery.add(discourseBooleanQuery, BooleanClause.Occur.MUST);
+        searchQuery.add(discourseQuery, BooleanClause.Occur.MUST);
 
         return searchQuery;
+    }
+    
+    private SpanNearQuery _prepareSpanQuery(String [] searchText, String term, int slop) throws ParseException {
+
+        SpanQuery[] clauses = new SpanQuery[searchText.length];
+        
+        for ( int i = 0; i < searchText.length; i++ ) {
+            clauses[i] = new SpanTermQuery(new Term(term, searchText[i]));
+        }
+
+        SpanNearQuery textQuery = new SpanNearQuery(clauses, slop, false);
+        return textQuery;
+    }
+    
+    private SpanNearQuery _prepareSpanQuery(SpanQuery [] clauses, int slop) throws ParseException {
+        SpanNearQuery textQuery = new SpanNearQuery(clauses, slop, false);
+        return textQuery;
     }
 
     public Analyzer getAnalyzer(List<String> languages, boolean lemma) {
@@ -279,21 +416,21 @@ public class Searcher {
         }
     }
 
-    public void setSnippet(LuceneSnippet snippet, String order, String position) {
+    public void setSnippet(LuceneSnippet snippet, String order, int position) {
         String text = snippet.getSnippet();
         String word;
         if (order.equals("before")) {
-            if (position.equals("1")) {
+            if (position == 1) {
                 word = text.replaceAll("(.* )(\\S+)( <b>.*)", "$1<i>$2</i>$3");
                 if (word.equals(text)) {
                     word = text.replaceAll("^(\\S+)( <b>.*)", "<i>$1</i>$2");
                 }
-            } else if (position.equals("2")) {
+            } else if (position == 2) {
                 word = text.replaceAll("(.* )(\\S+)( \\S+ <b>.*)", "$1<i>$2</i>$3");
                 if (word.equals(text)) {
                     word = text.replaceAll("^(\\S+)( \\S+ <b>.*)", "<i>$1</i>$2");
                 }
-            } else if (position.equals("3")) {
+            } else if (position == 3) {
                 word = text.replaceAll("(.* )(\\S+)( \\S+ \\S+ <b>.*)", "$1<i>$2</i>$3");
                 if (word.equals(text)) {
                     word = text.replaceAll("(.* )(\\S+)( \\S+ \\S+ <b>.*)", "<i>$1</i>$2");
@@ -305,11 +442,11 @@ public class Searcher {
                 }
             }
         } else {
-            if (position.equals("1")) {
+            if (position == 1) {
                 word = text.replaceAll("(.*</b>[\\S]* )(\\S+)(.*)", "$1<i>$2</i>$3");
-            } else if (position.equals("2")) {
+            } else if (position == 2) {
                 word = text.replaceAll("(.*</b>[\\S]* \\S+ )(\\S+)(.*)", "$1<i>$2</i>$3");
-            } else if (position.equals("3")) {
+            } else if (position == 3) {
                 word = text.replaceAll("(.*</b>[\\S]* \\S+ \\S+ )(\\S+)(.*)", "$1<i>$2</i>$3");
             } else {
                 word = text.replaceAll("(.*</b>[\\S]* \\S+ \\S+ \\S+ )(\\S+)(.*)", "$1<i>$2</i>$3");

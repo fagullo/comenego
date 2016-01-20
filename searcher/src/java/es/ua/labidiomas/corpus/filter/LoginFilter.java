@@ -21,7 +21,7 @@ import javax.servlet.http.HttpSession;
  *
  * @author paco
  */
-@WebFilter(filterName = "LoginFilter", urlPatterns = {"/search"})
+@WebFilter(filterName = "LoginFilter", asyncSupported = true, urlPatterns = {"/searcher/services/comenego/*"})
 public class LoginFilter implements Filter {
 
     @Override

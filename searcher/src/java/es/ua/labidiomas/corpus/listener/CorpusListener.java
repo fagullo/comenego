@@ -1,16 +1,8 @@
 package es.ua.labidiomas.corpus.listener;
 
 import es.ua.labidiomas.corpus.util.Config;
-import es.ua.labidiomas.corpus.index.Indexer;
-import es.ua.labidiomas.corpus.index.IndexerFactory;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -62,7 +54,6 @@ public class CorpusListener implements HttpSessionListener, ServletContextListen
             Logger.getLogger("").addHandler(handler);
             Config.loadConfig(sce);
             System.out.println("Iniciando aplicación en " + Config.WEB_APP_PATH);
-            java.util.logging.Logger.getLogger(Indexer.class.getName()).log(Level.INFO, "Indexacion finalizada.");
         } catch (FileNotFoundException ex) {
             Logger.getLogger(CorpusListener.class.getName()).log(Level.SEVERE, null, ex);
         } catch (ParserConfigurationException ex) {
