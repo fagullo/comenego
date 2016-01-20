@@ -150,7 +150,7 @@ public class Indexer implements Closeable {
 
     private void _indexTexts(Connection conexion, ResultSet texts, String lang, boolean lemma) throws SQLException, IOException {
         int counter = 0;
-        try (Indexer indexer = IndexerFactory.getInstance().getIndexer(lang)) {
+        try (Indexer indexer = IndexerFactory.getInstance().getIndexer(lang, lemma)) {
             while (texts.next()) {
                 int paragraphID = texts.getInt("id");
                 String textSelect = "SELECT content, text_id FROM paragraph WHERE id = ?;";
@@ -186,7 +186,7 @@ public class Indexer implements Closeable {
 
     private void _indexNGramas(Connection conexion, ResultSet texts, String lang, int size, boolean lemma) throws SQLException, IOException {
         FileUtils.writeStringToFile(logFile, "Creando nGramas para " + lang + "\n", true);
-        try (Indexer indexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, size)) {
+        try (Indexer indexer = IndexerFactory.getInstance().getNGrammaIndexer(lang, size, lemma)) {
             int counter = 0;
             while (texts.next()) {
                 int paragraphID = texts.getInt("id");
