@@ -20,6 +20,7 @@
         <link rel="StyleSheet" href="css/jquery.switchButton.css" type="text/css" media="screen" />
         <link rel="StyleSheet" href="css/selectivity-full.min.css" type="text/css" media="screen" />
         <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css"> 
+        <link rel="stylesheet" href="css/arrowsandboxes.css" type="text/css" />
         <!--<link rel="StyleSheet" href="css/jquery.mobile-1.4.5.min.css" type="text/css" media="screen" />-->
         <script src="js/jquery-2.1.0.min.js" type="text/javascript"></script>
         <script src="js/bootstrap.min.js" type="text/javascript"></script>
@@ -30,6 +31,9 @@
         <script src="js/jquery-ui.js" type="text/javascript"></script>
         <script src="js/jquery.switchButton.js" type="text/javascript"></script>
         <script src="js/selectivity-full.min.js" type="text/javascript"></script> 
+        <script src="http://www.headjump.de/javascripts/jquery_wz_jsgraphics.js" type="text/javascript"></script>
+        <script src="js/arrowsandboxes.js" type="text/javascript"></script>
+        <script src="js/mustache.js" type="text/javascript"></script>
         <!--<script src="js/jquery.mobile-1.4.5.min.js" type="text/javascript"></script>-->
         <title><fmt:message key="index.title" /></title>
     </head>
@@ -53,40 +57,24 @@
             <div class="panel panel-info">
                 <div class="panel-heading"><fmt:message key="search.configuration" /></div>
                 <div class="panel-body">
-                    <form action="javascript:search()" method="POST" class="form-inline" role="form">
-                        <div class="col-md-12">
+                    <form action="javascript:search()" method="POST" class="form-inline col-md-12" role="form">
+                        <div class="col-md-12" style="float: left;">
                             <div class="col-md-10" style="float: left; margin-bottom: 5px;">
-                                <div class="col-md-8">
+                                <div class="col-md-10">
                                     <input type="text" name="search" class="form-control" id="search" placeholder="<fmt:message key="search.text" />">
                                 </div>
-                                <button type="button" class="btn btn-warning" aria-label="Config">
+                                <button type="button" class="btn btn-warning" aria-label="Config" id="config-button" disabled="">
                                     <span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
                                 </button>
-                                <button type="button" class="btn btn-success" aria-label="Add">
-                                    <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
-                                </button>
-                                <button type="button" class="btn btn-danger" aria-label="Remove">
-                                    <span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>
-                                </button>
                             </div>
-                            <div class="col-md-10">
-                                <div class="col-md-8">
-                                    <input type="text" name="search" class="form-control" id="search" placeholder="<fmt:message key="search.text" />">
-                                </div>
-                                <button type="button" class="btn btn-warning" aria-label="Config">
-                                    <span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
-                                </button>
-                                <button type="button" class="btn btn-success" aria-label="Add">
-                                    <span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>
-                                </button>
-                                <button type="button" class="btn btn-danger" aria-label="Remove">
-                                    <span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>
-                                </button>
-                            </div>
-                            <div class="col-md-2">
+                            <div class="col-md-1" style="text-align: right;">
                                 <div class="form-group">
                                     <input type="submit" class="btn btn-primary left" name="create" value="<fmt:message key="search" />" id="create">
                                 </div>
+                            </div>
+                        </div>
+                        <div id="arrows-container" class="col-md-12" style="float: left;">
+                            <div id="graph-wrapper">
                             </div>
                         </div>
                         <div id="lang-container" class="col-md-12">
@@ -202,7 +190,26 @@
             <div id='paginador' class='col-lg-12 col-md-12 col-sm-12 col-xs-12' style="float: left; clear: both;"></div>
             <div id='paginador-letras' class='col-lg-12 col-md-12 col-sm-12 col-xs-12' style="float: left; clear: both;"></div>
         </div>
-        <div class="modal"></div>
+        <div class="modal" id="ajax-load"></div>
+
+        <div class="modal fade" id="search-config-modal" tabindex="-1" role="dialog" aria-labelledby="searchConfig">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header" id="search-config-header">
+                        <button type="button"id="search-config-close" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="searchConfig">Configure Search Criteria</h4>
+                    </div>
+                    <div class="modal-body" id="search-config-body">
+                        <div id="search-config-body-content">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-success" id="modal-save">Save changes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <footer class="col-md-8 col-md-offset-2">
             <div class="col-md-12">
@@ -231,11 +238,7 @@
             </div>
         </footer>
         <script>
-            $("#lemmatizer-input").switchButton({
-                on_label: '<fmt:message key="yes" />',
-                off_label: '<fmt:message key="no" />'
-            });
-            $("#title-input").switchButton({
+            $("#lemmatizer-input, #title-input").switchButton({
                 on_label: '<fmt:message key="yes" />',
                 off_label: '<fmt:message key="no" />'
             });

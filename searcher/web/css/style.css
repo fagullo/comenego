@@ -42,13 +42,68 @@ footer, header {
     float: left;
 }
 
+#arrows-container {
+    margin-left: 30px;
+}
+
+.arrowsandboxes-powered-by {
+    display: none !important;
+}
+
+
+#search-config-header {
+    /*background-color: #428bca;*/
+    background: linear-gradient(to bottom,#428bca 0,#2d6ca2 100%);
+}
+
+#searchConfig, #search-config-close {
+    color: white;
+    font-weight: bolder;
+}
+
+.config-word {
+    margin-bottom: 10px;
+}
+
+.word-wrapper-modal {
+    /*background: linear-gradient(to bottom,#c8edf7 0,#2b669a 100%);*/
+    /*background: linear-gradient(to bottom,#428bca 0,#2d6ca2 100%);*/
+    background-color: #5cb85c;
+    width: 150px;
+    height: 35px;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    padding-top: 8px; 
+    margin: 0 !important;
+}
+
+.selectable-word {
+    cursor: pointer;
+    border: 2px solid #55b1f1;
+}
+
+.word-wrapper-modal-main {
+    background-color: #bbeaff;
+}
+
+.less-distance, .more-distance {
+    cursor: pointer;
+}
+
+.word-group-wrapper {
+    margin-bottom: 50px;
+}
 /***
 Start by setting display:none to make this hidden.
 Then we position it in relation to the viewport wi  ndow
 with position:fixed. Width, height, top and left speak
 speak for themselves. Background we set to 80% white with
 our animation centered, and no-repeating */
-.modal {
+#ajax-load {
     display:    none;
     position:   fixed;
     z-index:    1000;
@@ -70,7 +125,7 @@ body.loading {
 
 /* Anytime the body has the loading class, our
    modal element will be visible */
-body.loading .modal {
+body.loading #ajax-load {
     display: block;
 }
 

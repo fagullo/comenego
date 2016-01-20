@@ -2,20 +2,33 @@ var lastSearch = null;
 
 var discoursesMap = ['SCI', 'COM', 'DID', 'LEG', 'ORG', 'PRS', 'TEC'];
 var discoursesSelected = ['SCI', 'COM', 'DID', 'LEG', 'ORG', 'PRS', 'TEC'];
+var graphSpecialCharacters = [">", "<", "-", ":", "(", ")", "[", "]", "|"];
+var overflow = false;
+var maxNodes = 0;
+var searchNodes = [];
+var recalculateNodes = true;
+
+
+(function ($) {
+    $.fn.hasScrollBar = function () {
+        return this.get(0).scrollWidth > this.width();
+    }
+})(jQuery);
+
 
 $(document).on({
-    ajaxStart: function() {
+    ajaxStart: function () {
         $("#pleaseWaitDialog").modal();
         $("body").addClass("loading");
     },
-    ajaxStop: function() {
+    ajaxStop: function () {
         $("body").removeClass("loading");
     }
 });
 
-$(document).ready(function() {
+$(document).ready(function () {
 
-    $('#tags-input').on("change", function(event) {
+    $('#tags-input').on("change", function (event) {
         if (event.added) {
             var index = $.inArray(event.added.id, inputItems);
             if (index < 0) {
@@ -35,7 +48,7 @@ $(document).ready(function() {
         }
     });
 
-    $("#lemmatizer-input").change(function() {
+    $("#lemmatizer-input").change(function () {
         if ($("#lemmatizer").val() === "false") {
             $("#lemmatizer").val("true");
         } else {
@@ -43,7 +56,7 @@ $(document).ready(function() {
         }
     });
 
-    $("#title-input").change(function() {
+    $("#title-input").change(function () {
         if ($("#title-filter").val() === "false") {
             $("#title-filter").val("true");
         } else {
@@ -51,7 +64,7 @@ $(document).ready(function() {
         }
     });
 
-    $("#subsearch").click(function() {
+    $("#subsearch").click(function () {
 
         if (!$("#subsearch").hasClass("disabled")) {
             $("#subsearch").addClass("disabled");
@@ -60,7 +73,7 @@ $(document).ready(function() {
         }
     });
 
-    $(".order").click(function() {
+    $(".order").click(function () {
         $('#search-sort').val($(this).children('input').prop('value'));
         $(".order").removeClass("active");
         $(this).addClass("active");
@@ -72,18 +85,81 @@ $(document).ready(function() {
         return false; //Prevent default action.
     });
 
-    $(".lang-btn").click(function() {
+    $(".lang-btn").click(function () {
         $('#search-lang').val($(this).children('input').prop('value'));
         $(".lang-btn").removeClass("active");
         $(this).addClass("active");
         return false; //Prevent default action.
     });
 
-    $(".skipg").click(function() {
+    $(".skipg").click(function () {
         $('#skip-grams').val($(this).children('input').prop('value'));
         $(".skipg").removeClass("active");
         $(this).addClass("active");
         return false; //Prevent default action.
+    });
+
+    $('#search').keyup(function (a) {
+        var content = $('#search').val().trim().split(" ");
+        recalculateNodes = true;
+        fillGraph();
+        if (!overflow) {
+            if (!$(".arrowsandboxes-wrapper").hasScrollBar()) {
+                maxNodes = content.length;
+            } else {
+                overflow = true;
+                fillGraph();
+            }
+        }
+    });
+
+    $("#config-button").click(function () {
+        var views = getModalViews();
+        var view = "";
+        for (var i = 0; i < views.length; i++) {
+            view += loadView(views[i]);
+        }
+
+        $("#search-config-body-content").html(view);
+        $("#search-config-modal").modal();
+    });
+
+    $("#modal-save").click(function () {
+        var dd = $(".distance-display");
+
+        for (var i = 0; i < dd.length; i++) {
+            searchNodes[i].distance = parseInt($("#distance-" + i).html());
+        }
+        for (var i = 0; i < searchNodes.length; i++) {
+            searchNodes[i].isMain = $("#modalWord-" + i).hasClass("word-wrapper-modal-main");
+        }
+
+        fillGraph();
+        $('#search-config-modal').modal('toggle');
+    });
+
+    $(document).on("click", ".addDistance", function () {
+        var wordID = $(this).attr("id");
+        wordID = wordID.substring(wordID.indexOf("-") + 1);
+        var distanceValue = parseInt($("#distance-" + wordID).html());
+        $("#distance-" + wordID).html(distanceValue + 1);
+    });
+
+    $(document).on("click", ".subDistance", function () {
+        var wordID = $(this).attr("id");
+        wordID = wordID.substring(wordID.indexOf("-") + 1);
+        var distanceValue = parseInt($("#distance-" + wordID).html());
+        if (distanceValue > 0) {
+            $("#distance-" + wordID).html(distanceValue - 1);
+        }
+    });
+
+    $(document).on("click", ".selectable-word", function () {
+        var wordID = $(this).attr("id");
+        if (wordID && wordID.substring(0, 9) === "modalWord") {
+            $(".word-wrapper-modal").removeClass("word-wrapper-modal-main");
+            $(this).addClass("word-wrapper-modal-main");
+        }
     });
 });
 
@@ -101,7 +177,7 @@ function search(page, letter, subsearch) {
     }
     var discourses = "";
     var sorted;
-    $("input[name='discourses-selection']:checked").each(function() {
+    $("input[name='discourses-selection']:checked").each(function () {
         discourses += $(this).val() + " ";
     });
 
@@ -129,7 +205,7 @@ function search(page, letter, subsearch) {
         url: "/searcher/services/comenego/load",
         contentType: "application/json; charset=ISO-8859-1",
         data: JSON.stringify(data),
-        success: function(searchresult) {
+        success: function (searchresult) {
             lastSearch = {
                 text: $("#search").val(),
             };
@@ -179,7 +255,7 @@ function search(page, letter, subsearch) {
                 getPaginator(parseInt(page), numPages, letter, $("#search").val(), sorted);
             }
         },
-        error: function(XMLHttpRequest, textStatus, errorThrown) {
+        error: function (XMLHttpRequest, textStatus, errorThrown) {
             if (XMLHttpRequest.status === 401) {
                 window.location.href = "login.jsp";
             }
@@ -287,4 +363,124 @@ function getSmallPaginator(current, total, letter, url) {
         paginator += "</ul>";
     }
     return paginator;
+}
+
+function fillGraph() {
+    calculateSearchNodes();
+    var size = searchNodes.length;
+    var nodes = "";
+    for (var i = 0; i < size; i++) {
+        var node = "";
+        var text = parseText(searchNodes[i].word);
+        if (text.length > 0) {
+            node += "n" + i + ":" + text;
+            if (i !== size - 1) {
+                if (i > 0 && (i + 1) % maxNodes === 0 && overflow) {
+                    if (searchNodes[i].isMain) {
+                        nodes += "((" + node + ">" + searchNodes[i].distance + " [n" + (i + 1) + "] )) || ";
+                    } else {
+                        nodes += "(" + node + ">" + searchNodes[i].distance + "[n" + (i + 1) + "] ) || ";
+                    }
+                } else {
+                    if (searchNodes[i].isMain) {
+                        nodes += "((" + node + ")) >" + searchNodes[i].distance + " ";
+                    } else {
+                        nodes += "(" + node + ") >" + searchNodes[i].distance + " ";
+                    }
+                }
+            } else {
+                if (searchNodes[i].isMain) {
+                    nodes += "((" + node + "))";
+                } else {
+                    nodes += "(" + node + ")";
+                }
+            }
+        }
+    }
+    if (size > 1) {
+        $("#config-button").removeAttr("disabled");
+    } else if (!$("#config-button").attr("disabled")) {
+        $("#config-button").attr("disabled", "");
+    }
+    showGraph(nodes);
+}
+
+function parseText(content) {
+    var text = content;
+    for (var j = 0; j < graphSpecialCharacters.length; j++) {
+        text = text.replace(graphSpecialCharacters[j], "{{" + graphSpecialCharacters[j] + "}}");
+    }
+    return text;
+}
+
+function showGraph(content) {
+    $("#arrows-container").empty();
+    $("#arrows-container").append("<pre id='arrows' class='arrows-and-boxes'>" + content + "</pre>");
+    $("#arrows").arrows_and_boxes();
+}
+
+
+var wordModalTemplate = "<div class='col-md-12 word-group-wrapper' style='text-align: center;'>"
+        + "<div class='{{wordClass}} selectable-word col-md-4' id='modalWord-{{wordID}}'>{{word1}}</div>"
+        + "<div class='distance-wrapper-modal col-md-4'>"
+        + "<div class='btn-group' role='group' aria-label='btn-group-1'>"
+        + "<button type='button' class='btn btn-warning subDistance' id='subDistance-{{wordID}}'><i class='glyphicon glyphicon-chevron-left'></i></button>"
+        + "<div class='btn btn-primary disabled distance-display' id='distance-{{wordID}}' >{{distance}}</div>"
+        + "<button type='button' class='btn btn-warning addDistance' id='addDistance-{{wordID}}'><i class='glyphicon glyphicon-chevron-right'></i></button>"
+        + "</div>"
+        + "</div>"
+        + "<div class='word-wrapper-modal col-md-4 {{selectable}}' id='{{rightID}}'>{{word2}}</div>"
+        + "</div>";
+
+function loadView(view) {
+    return Mustache.render(wordModalTemplate, view);
+}
+
+function calculateSearchNodes() {
+    if (recalculateNodes) {
+        var content = $('#search').val().trim().split(" ");
+        searchNodes = [];
+        for (var i = 0; i < content.length; i++) {
+            var node = {
+                word: content[i],
+                distance: 0,
+                isMain: false
+            };
+            if (i === 0) {
+                node.isMain = true;
+            }
+            searchNodes.push(node);
+        }
+        recalculateNodes = false;
+    }
+}
+
+function getModalViews() {
+    calculateSearchNodes();
+    var views = [];
+
+    for (var i = 0; i < searchNodes.length; i++) {
+        if (i !== (searchNodes.length - 1)) {
+            var view = {
+                word1: searchNodes[i].word,
+                word2: searchNodes[i + 1].word,
+                distance: searchNodes[i].distance,
+                wordID: i,
+                selectable: "",
+                rightID: "dummy-" + i
+            };
+            if (searchNodes[i].isMain) {
+                view.wordClass = "word-wrapper-modal word-wrapper-modal-main";
+            } else {
+                view.wordClass = "word-wrapper-modal";
+            }
+            if (searchNodes.length > 1 && i === (searchNodes.length - 2)) {
+                view.selectable = "selectable-word";
+                view.rightID = "modalWord-" + (i + 1);
+            }
+            views.push(view);
+        }
+    }
+
+    return views;
 }
