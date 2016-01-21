@@ -34,7 +34,9 @@
         <script src="http://www.headjump.de/javascripts/jquery_wz_jsgraphics.js" type="text/javascript"></script>
         <script src="js/arrowsandboxes.js" type="text/javascript"></script>
         <script src="js/mustache.js" type="text/javascript"></script>
-        <!--<script src="js/jquery.mobile-1.4.5.min.js" type="text/javascript"></script>-->
+
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+        <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
         <title><fmt:message key="index.title" /></title>
     </head>
     <body>
@@ -190,27 +192,18 @@
             <div id='paginador' class='col-lg-12 col-md-12 col-sm-12 col-xs-12' style="float: left; clear: both;"></div>
             <div id='paginador-letras' class='col-lg-12 col-md-12 col-sm-12 col-xs-12' style="float: left; clear: both;"></div>
         </div>
-        <div class="modal" id="ajax-load"></div>
 
-        <div class="modal fade" id="search-config-modal" tabindex="-1" role="dialog" aria-labelledby="searchConfig">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header" id="search-config-header">
-                        <button type="button"id="search-config-close" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title" id="searchConfig">Configure Search Criteria</h4>
-                    </div>
-                    <div class="modal-body" id="search-config-body">
-                        <div id="search-config-body-content">
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
-                            <button type="button" class="btn btn-success" id="modal-save">Save changes</button>
-                        </div>
-                    </div>
-                </div>
+        <div id="config-dialog">
+            <p id="config-dialig-note">Click on the bordered boxes to set the word as main</p>
+            <div id="search-config-body-content" class="col-md-12">
+            </div>
+            <div class="col-md-4 right" id="config-footer">
+                <button type="button" class="btn btn-danger" id="config-close">Close</button>
+                <button type="button" class="btn btn-success" id="config-save">Save changes</button>
             </div>
         </div>
 
+        <div class="modal" id="ajax-load"></div>
         <footer class="col-md-8 col-md-offset-2">
             <div class="col-md-12">
                 <img src="media/img/logo_generalitat.gif">
@@ -241,6 +234,23 @@
             $("#lemmatizer-input, #title-input").switchButton({
                 on_label: '<fmt:message key="yes" />',
                 off_label: '<fmt:message key="no" />'
+            });
+
+            $("#config-dialog").dialog({
+                autoOpen: false,
+                modal: true,
+                title: "Configure Search Criteria",
+                width: 800,
+                height: 400,
+                minWidth : 800,
+                show: {
+                    effect: "clip",
+                    duration: 1000
+                },
+                hide: {
+                    effect: "clip",
+                    duration: 1000
+                }
             });
         </script>
     </body>

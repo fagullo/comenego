@@ -121,10 +121,17 @@ $(document).ready(function () {
         }
 
         $("#search-config-body-content").html(view);
-        $("#search-config-modal").modal();
+        if ( searchNodes.length > 6 ) {
+            $("#config-footer").css("bottom", "auto");
+        }
+        $("#config-dialog").dialog("open");
     });
 
-    $("#modal-save").click(function () {
+    $("#config-close").click(function () {
+        $("#config-dialog").dialog("close");
+    });
+
+    $("#config-save").click(function () {
         var dd = $(".distance-display");
 
         for (var i = 0; i < dd.length; i++) {
@@ -273,7 +280,7 @@ function getPaginator(current, total, letter, text, sorted) {
         paginator = getSmallPaginator(current, total, letter, url);
     }
     $("#paginador").html(paginator);
-    if (sorted == "true") {
+    if (sorted === "true") {
         $("#paginador-letras").html(paginatorLetras(url + "1/letter/"));
     }
 }
