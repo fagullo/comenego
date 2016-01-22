@@ -14,8 +14,57 @@ footer, header {
 }
 
 .title h1 {
-    font-size: 1.3em;
+    font-size: 1em;
     font-weight: bold;
+    margin-top: 0px;
+}
+
+.switch-container {
+    float: left;
+}
+
+.language-wrapper, discourse-wrapper {
+    margin-top: 10px;
+    float: left;
+    padding-left: 0px;
+}
+
+.discourse-wrapper {
+    margin-top: 10px;
+    float: left;
+    padding-left: 0px;
+}
+
+.language-wrapper .title {
+    padding-top: 10px;
+}
+
+#tags-input {
+    padding-left: 15px;
+}
+
+.selectivity-multiple-input {
+    min-width: 80px !important;
+}
+
+.selectivity-multiple-input-container {
+    min-width: 750px !important;
+}
+.discourse-wrapper .title {
+    padding-top: 16px;
+}
+
+.switch-info {
+    color: #55b1f1;
+    cursor: help;
+}
+
+#form-wrapper {
+    margin-bottom: 40px;
+}
+
+#switches-container {
+    margin-top: 10px;
 }
 
 .well {
@@ -32,7 +81,6 @@ footer, header {
     -webkit-border-radius: 15px;
     -moz-border-radius: 15px;
     border-radius: 15px;
-    border: 1px solid red;
     float: left;
     padding-top: 15px;
     padding-bottom: 15px;
@@ -40,10 +88,6 @@ footer, header {
 
 #content {
     float: left;
-}
-
-#arrows-container {
-    margin-left: 30px;
 }
 
 .arrowsandboxes-powered-by {
@@ -86,7 +130,7 @@ footer, header {
     font-size: 0.7em;
 }
 
-.word-wrapper-modal {
+.displayable-term {
     /*background: linear-gradient(to bottom,#c8edf7 0,#2b669a 100%);*/
     /*background: linear-gradient(to bottom,#428bca 0,#2d6ca2 100%);*/
     background-color: #5cb85c;
@@ -96,27 +140,22 @@ footer, header {
     -moz-border-radius: 5px;
     border-radius: 5px;
     color: white;
+    cursor: pointer;
     font-weight: bold;
     text-align: center;
     padding-top: 8px; 
     margin: 0 !important;
 }
 
-.selectable-word {
-    cursor: pointer;
-    border: 2px solid #55b1f1;
-}
-
-.word-wrapper-modal-main {
+.displayable-term-main {
     background-color: #bbeaff;
+}
+.arrowsandboxes-node {
+    cursor: pointer !important;
 }
 
 .less-distance, .more-distance {
     cursor: pointer;
-}
-
-.word-group-wrapper {
-    margin-bottom: 50px;
 }
 /***
 Start by setting display:none to make this hidden.
@@ -177,9 +216,4 @@ body.loading #ajax-load {
 
 .no-padding {
     padding: 0 !important;
-}
-
-#lang-container {
-    float: left;
-    clear: both;
 }

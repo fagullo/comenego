@@ -3,10 +3,9 @@ var lastSearch = null;
 var discoursesMap = ['SCI', 'COM', 'DID', 'LEG', 'ORG', 'PRS', 'TEC'];
 var discoursesSelected = ['SCI', 'COM', 'DID', 'LEG', 'ORG', 'PRS', 'TEC'];
 var graphSpecialCharacters = [">", "<", "-", ":", "(", ")", "[", "]", "|"];
-var overflow = false;
-var maxNodes = 0;
+var maxNodes = 5;
 var searchNodes = [];
-var recalculateNodes = true;
+var currentTargetNode = -1;
 
 
 (function ($) {
@@ -85,13 +84,6 @@ $(document).ready(function () {
         return false; //Prevent default action.
     });
 
-    $(".lang-btn").click(function () {
-        $('#search-lang').val($(this).children('input').prop('value'));
-        $(".lang-btn").removeClass("active");
-        $(this).addClass("active");
-        return false; //Prevent default action.
-    });
-
     $(".skipg").click(function () {
         $('#skip-grams').val($(this).children('input').prop('value'));
         $(".skipg").removeClass("active");
@@ -99,31 +91,15 @@ $(document).ready(function () {
         return false; //Prevent default action.
     });
 
-    $('#search').keyup(function (a) {
-        var content = $('#search').val().trim().split(" ");
-        recalculateNodes = true;
-        fillGraph();
-        if (!overflow) {
-            if (!$(".arrowsandboxes-wrapper").hasScrollBar()) {
-                maxNodes = content.length;
-            } else {
-                overflow = true;
-                fillGraph();
-            }
-        }
-    });
-
     $("#config-button").click(function () {
-        var views = getModalViews();
-        var view = "";
-        for (var i = 0; i < views.length; i++) {
-            view += loadView(views[i]);
-        }
-
-        $("#search-config-body-content").html(view);
-        if ( searchNodes.length > 6 ) {
+        calculateSearchNodes();
+        fillGraph();
+        if (searchNodes.length > maxNodes * 3) {
             $("#config-footer").css("bottom", "auto");
+        } else {
+            $("#config-footer").css("bottom", "10px");
         }
+        $("#search-config-body-content").html("");
         $("#config-dialog").dialog("open");
     });
 
@@ -131,41 +107,59 @@ $(document).ready(function () {
         $("#config-dialog").dialog("close");
     });
 
-    $("#config-save").click(function () {
-        var dd = $(".distance-display");
-
-        for (var i = 0; i < dd.length; i++) {
-            searchNodes[i].distance = parseInt($("#distance-" + i).html());
-        }
-        for (var i = 0; i < searchNodes.length; i++) {
-            searchNodes[i].isMain = $("#modalWord-" + i).hasClass("word-wrapper-modal-main");
-        }
-
-        fillGraph();
-        $('#search-config-modal').modal('toggle');
+    $(".lang-selector").click(function () {
+        $("#lang-icon").attr("src", $(this).attr("data-img"));
+        $("#lang-icon").attr("data-value", $(this).attr("data-value"));
     });
 
     $(document).on("click", ".addDistance", function () {
-        var wordID = $(this).attr("id");
-        wordID = wordID.substring(wordID.indexOf("-") + 1);
-        var distanceValue = parseInt($("#distance-" + wordID).html());
-        $("#distance-" + wordID).html(distanceValue + 1);
+        var distanceValue = parseInt($("#word-distance").html());
+        $("#word-distance").html(distanceValue + 1);
+        searchNodes[currentTargetNode].distance = distanceValue + 1;
+        fillGraph();
     });
 
     $(document).on("click", ".subDistance", function () {
-        var wordID = $(this).attr("id");
-        wordID = wordID.substring(wordID.indexOf("-") + 1);
-        var distanceValue = parseInt($("#distance-" + wordID).html());
-        if (distanceValue > 0) {
-            $("#distance-" + wordID).html(distanceValue - 1);
+        var distanceValue = parseInt($("#word-distance").html()) - 1;
+        if (distanceValue > -1) {
+            $("#word-distance").html(distanceValue);
+            searchNodes[currentTargetNode].distance = distanceValue;
         }
+        fillGraph();
     });
 
-    $(document).on("click", ".selectable-word", function () {
+    $(document).on("click", ".displayable-term", function () {
+        $(".displayable-term-main").removeClass("displayable-term-main");
+        $(this).addClass("displayable-term-main");
         var wordID = $(this).attr("id");
-        if (wordID && wordID.substring(0, 9) === "modalWord") {
-            $(".word-wrapper-modal").removeClass("word-wrapper-modal-main");
-            $(this).addClass("word-wrapper-modal-main");
+        var wordIndex = parseInt(wordID.substring(wordID.indexOf("-") + 1));
+        for (var i = 0; i < searchNodes.length; i++) {
+            if (wordIndex === i) {
+                searchNodes[i].isMain = true;
+            } else {
+                searchNodes[i].isMain = false;
+            }
+        }
+        fillGraph();
+    });
+
+    $(document).on("click", ".arrowsandboxes-node", function () {
+        var arrows = $(".arrowsandboxes-node");
+        var labels = $(".arrowsandboxes-label");
+
+        for (var i = 0; i < arrows.length; i++) {
+
+            if (arrows[i] === this && labels[i]) {
+                currentTargetNode = i;
+                $("#search-config-body-content").html(loadView({
+                    word1: $($(arrows[i]).children()[0]).html(),
+                    distance: $(labels[i]).html(),
+                    word2: $($(arrows[i + 1]).children()[0]).html(),
+                    word1ID: i,
+                    word2ID: (i + 1)
+                }));
+                break;
+            }
         }
     });
 });
@@ -189,7 +183,7 @@ function search(page, letter, subsearch) {
     });
 
     var data = {
-        languages: $('#search-lang').val(),
+        languages: $("#lang-icon").attr("data-value"),
         discourses: discourses,
         page: page,
         letter: letter,
@@ -207,67 +201,75 @@ function search(page, letter, subsearch) {
         data.lastSearch = $("#search").val();
     }
 
-    $.ajax({
-        type: "POST",
-        url: "/searcher/services/comenego/load",
-        contentType: "application/json; charset=ISO-8859-1",
-        data: JSON.stringify(data),
-        success: function (searchresult) {
-            lastSearch = {
-                text: $("#search").val(),
-            };
-            if ($("#title-filter").val() === "false") {
-                lastSearch.field = "text";
-            } else {
-                lastSearch.field = "title";
-            }
+    calculateSearchNodes();
 
-            if (!searchresult.matches || searchresult.matches.length === 0) {
-                $("#paginador").html("");
-                $("#hits").html(
-                        "<div class='alert alert-warning alert-dismissable'>"
-                        + "<button type='button' class='close' data-dismiss='alert' aria-hidden='true'>&times;</button>"
-                        + "No se ha encontrado ningún resultado.</div>");
-                $("#num-docs").html(0);
-            } else {
-                var matches = searchresult.matches;
-                sorted = searchresult.sorted;
-                $("#total-hits").show();
-                $("#num-docs").html(searchresult.numDocs);
-                var numPages = searchresult.numPages;
-                $("#hits").empty();
-                for (var i = 0; i < matches.length; i++) {
-                    var resultObj = matches[i];
-                    var link = resultObj.url;
-                    var discourses = resultObj.discourses;
-                    var snippet = resultObj.snippet.trim();
-                    var matchPosition = snippet.indexOf("</b>");
-                    var spaces = "";
-                    var targetPosition = 80;
-                    if (matchPosition > targetPosition) {
-                        snippet = snippet.substr(matchPosition - (targetPosition - 1));
-                    } else {
-                        for (var j = matchPosition; j < (targetPosition - 1); j++) {
-                            spaces += "&nbsp;";
-                        }
-                    }
-                    var listItem = "<li class='snippet' style='padding: 0 !important;'>"
-                            + "<div class='col-lg-10 col-md-10 col-sm-10 col-xs-10' style='padding: 0 !important;'>" + spaces + snippet + "</div>"
-                            + "<div class='col-lg-2 col-md-2 col-sm-2 col-xs-2' style='text-align: right; padding: 0 !important;'>"
-                            + "<a href='" + link + "' target='_blank'><div class='glyphicon glyphicon-link'></div></a> " + discourses + "</div>"
-                            + "</li>";
-//                $("#hits").append("<li class='snippet'>" + spaces + snippet + "</li>");
-                    $("#hits").append(listItem);
-                }
-                getPaginator(parseInt(page), numPages, letter, $("#search").val(), sorted);
-            }
-        },
-        error: function (XMLHttpRequest, textStatus, errorThrown) {
-            if (XMLHttpRequest.status === 401) {
-                window.location.href = "login.jsp";
-            }
-        }
-    });
+    console.log(searchNodes);
+    console.log(discoursesSelected);
+    console.log($("#lang-icon").attr("data-value"));
+    console.log(page);
+    console.log(letter);
+
+//    $.ajax({
+//        type: "POST",
+//        url: "/searcher/services/comenego/load",
+//        contentType: "application/json; charset=ISO-8859-1",
+//        data: JSON.stringify(data),
+//        success: function (searchresult) {
+//            lastSearch = {
+//                text: $("#search").val(),
+//            };
+//            if ($("#title-filter").val() === "false") {
+//                lastSearch.field = "text";
+//            } else {
+//                lastSearch.field = "title";
+//            }
+//
+//            if (!searchresult.matches || searchresult.matches.length === 0) {
+//                $("#paginador").html("");
+//                $("#hits").html(
+//                        "<div class='alert alert-warning alert-dismissable'>"
+//                        + "<button type='button' class='close' data-dismiss='alert' aria-hidden='true'>&times;</button>"
+//                        + "No se ha encontrado ningún resultado.</div>");
+//                $("#num-docs").html(0);
+//            } else {
+//                var matches = searchresult.matches;
+//                sorted = searchresult.sorted;
+//                $("#total-hits").show();
+//                $("#num-docs").html(searchresult.numDocs);
+//                var numPages = searchresult.numPages;
+//                $("#hits").empty();
+//                for (var i = 0; i < matches.length; i++) {
+//                    var resultObj = matches[i];
+//                    var link = resultObj.url;
+//                    var discourses = resultObj.discourses;
+//                    var snippet = resultObj.snippet.trim();
+//                    var matchPosition = snippet.indexOf("</b>");
+//                    var spaces = "";
+//                    var targetPosition = 80;
+//                    if (matchPosition > targetPosition) {
+//                        snippet = snippet.substr(matchPosition - (targetPosition - 1));
+//                    } else {
+//                        for (var j = matchPosition; j < (targetPosition - 1); j++) {
+//                            spaces += "&nbsp;";
+//                        }
+//                    }
+//                    var listItem = "<li class='snippet' style='padding: 0 !important;'>"
+//                            + "<div class='col-lg-10 col-md-10 col-sm-10 col-xs-10' style='padding: 0 !important;'>" + spaces + snippet + "</div>"
+//                            + "<div class='col-lg-2 col-md-2 col-sm-2 col-xs-2' style='text-align: right; padding: 0 !important;'>"
+//                            + "<a href='" + link + "' target='_blank'><div class='glyphicon glyphicon-link'></div></a> " + discourses + "</div>"
+//                            + "</li>";
+////                $("#hits").append("<li class='snippet'>" + spaces + snippet + "</li>");
+//                    $("#hits").append(listItem);
+//                }
+//                getPaginator(parseInt(page), numPages, letter, $("#search").val(), sorted);
+//            }
+//        },
+//        error: function (XMLHttpRequest, textStatus, errorThrown) {
+//            if (XMLHttpRequest.status === 401) {
+//                window.location.href = "login.jsp";
+//            }
+//        }
+//    });
 }
 
 function getPaginator(current, total, letter, text, sorted) {
@@ -373,7 +375,6 @@ function getSmallPaginator(current, total, letter, url) {
 }
 
 function fillGraph() {
-    calculateSearchNodes();
     var size = searchNodes.length;
     var nodes = "";
     for (var i = 0; i < size; i++) {
@@ -382,7 +383,7 @@ function fillGraph() {
         if (text.length > 0) {
             node += "n" + i + ":" + text;
             if (i !== size - 1) {
-                if (i > 0 && (i + 1) % maxNodes === 0 && overflow) {
+                if (i > 0 && (i + 1) % maxNodes === 0 && searchNodes.length > maxNodes) {
                     if (searchNodes[i].isMain) {
                         nodes += "((" + node + ">" + searchNodes[i].distance + " [n" + (i + 1) + "] )) || ";
                     } else {
@@ -404,11 +405,6 @@ function fillGraph() {
             }
         }
     }
-    if (size > 1) {
-        $("#config-button").removeAttr("disabled");
-    } else if (!$("#config-button").attr("disabled")) {
-        $("#config-button").attr("disabled", "");
-    }
     showGraph(nodes);
 }
 
@@ -428,24 +424,23 @@ function showGraph(content) {
 
 
 var wordModalTemplate = "<div class='col-md-12 word-group-wrapper' style='text-align: center;'>"
-        + "<div class='{{wordClass}} selectable-word col-md-4' id='modalWord-{{wordID}}'>{{word1}}</div>"
+        + "<div class='displayable-term col-md-4' id='modalWord-{{word1ID}}'>{{word1}}</div>"
         + "<div class='distance-wrapper-modal col-md-4'>"
         + "<div class='btn-group' role='group' aria-label='btn-group-1'>"
-        + "<button type='button' class='btn btn-warning subDistance' id='subDistance-{{wordID}}'><i class='glyphicon glyphicon-chevron-left'></i></button>"
-        + "<div class='btn btn-primary disabled distance-display' id='distance-{{wordID}}' >{{distance}}</div>"
-        + "<button type='button' class='btn btn-warning addDistance' id='addDistance-{{wordID}}'><i class='glyphicon glyphicon-chevron-right'></i></button>"
+        + "<button type='button' class='btn btn-warning subDistance'><i class='glyphicon glyphicon-chevron-left'></i></button>"
+        + "<div class='btn btn-primary disabled distance-display' id='word-distance'>{{distance}}</div>"
+        + "<button type='button' class='btn btn-warning addDistance'><i class='glyphicon glyphicon-chevron-right'></i></button>"
         + "</div>"
         + "</div>"
-        + "<div class='word-wrapper-modal col-md-4 {{selectable}}' id='{{rightID}}'>{{word2}}</div>"
-        + "</div>";
+        + "<div class='displayable-term col-md-4' id='modalWord-{{word2ID}}'>{{word2}}</div>";
 
 function loadView(view) {
     return Mustache.render(wordModalTemplate, view);
 }
 
 function calculateSearchNodes() {
-    if (recalculateNodes) {
-        var content = $('#search').val().trim().split(" ");
+    var content = $('#search').val().trim().split(/\s+/);
+    if (recalculateNodes(content)) {
         searchNodes = [];
         for (var i = 0; i < content.length; i++) {
             var node = {
@@ -458,36 +453,18 @@ function calculateSearchNodes() {
             }
             searchNodes.push(node);
         }
-        recalculateNodes = false;
     }
 }
 
-function getModalViews() {
-    calculateSearchNodes();
-    var views = [];
-
-    for (var i = 0; i < searchNodes.length; i++) {
-        if (i !== (searchNodes.length - 1)) {
-            var view = {
-                word1: searchNodes[i].word,
-                word2: searchNodes[i + 1].word,
-                distance: searchNodes[i].distance,
-                wordID: i,
-                selectable: "",
-                rightID: "dummy-" + i
-            };
-            if (searchNodes[i].isMain) {
-                view.wordClass = "word-wrapper-modal word-wrapper-modal-main";
-            } else {
-                view.wordClass = "word-wrapper-modal";
-            }
-            if (searchNodes.length > 1 && i === (searchNodes.length - 2)) {
-                view.selectable = "selectable-word";
-                view.rightID = "modalWord-" + (i + 1);
-            }
-            views.push(view);
+function recalculateNodes(content) {
+    if ( content.length !== searchNodes.length) {
+        return true;
+    }
+    for (var i = 0; i < content.length; i++) {
+        if ( searchNodes[i].word !== content[i] ) {
+            return true;
         }
     }
-
-    return views;
+    
+    return false;
 }

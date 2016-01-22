@@ -55,99 +55,41 @@
                 }
             %>
         </header>
-        <div id="content" class="col-md-12">
+        <div id="content" class="col-md-10 col-md-offset-1">
             <div class="panel panel-info">
                 <div class="panel-heading"><fmt:message key="search.configuration" /></div>
                 <div class="panel-body">
-                    <form action="javascript:search()" method="POST" class="form-inline col-md-12" role="form">
-                        <div class="col-md-12" style="float: left;">
-                            <div class="col-md-10" style="float: left; margin-bottom: 5px;">
-                                <div class="col-md-10">
-                                    <input type="text" name="search" class="form-control" id="search" placeholder="<fmt:message key="search.text" />">
-                                </div>
-                                <button type="button" class="btn btn-warning" aria-label="Config" id="config-button" disabled="">
-                                    <span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
-                                </button>
+                    <div class="col-md-12" id="form-wrapper">
+                        <form action="javascript:search()" method="POST" class="form-inline col-md-8 col-md-offset-2" role="form">
+                            <div class="input-group col-md-12">
+                                <div class="input-group-btn">
+                                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <img src="media/img/Spain-32.png" height="18" data-value="es" id="lang-icon"/>&nbsp;&nbsp;<span class="caret"></span></button>
+                                    <ul class="dropdown-menu">
+                                        <li><a href="#" class="lang-selector" data-img="media/img/Spain-32.png" data-value="es">Castellano</a></li>
+                                        <li><a href="#" class="lang-selector" data-img="media/img/United-Kingdom-32.png" data-value="en">English</a></li>
+                                        <li><a href="#" class="lang-selector" data-img="media/img/France-32.png" data-value="fr">Français</a></li>
+                                    </ul>
+                                </div><!-- /btn-group -->
+                                <input type="text" name="search" class="form-control" id="search" placeholder="<fmt:message key="search.text" />">
+                                <span class="input-group-btn">
+                                    <button type="button" class="btn btn-info" aria-label="Config" id="config-button">
+                                        <i class="glyphicon glyphicon-eye-open" aria-hidden="true"></i>
+                                    </button>
+                                    <button class="btn btn-primary" id="create" type="submit"><fmt:message key="search" /></button>
+                                </span>
                             </div>
-                            <div class="col-md-1" style="text-align: right;">
-                                <div class="form-group">
-                                    <input type="submit" class="btn btn-primary left" name="create" value="<fmt:message key="search" />" id="create">
-                                </div>
-                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="col-md-12 discourse-wrapper">
+                            <div class="title col-md-2"><h1><fmt:message key="discourses" />:</h1></div>
+                            <span id="tags-input" class="selectivity-input"></span>
                         </div>
-                        <div id="arrows-container" class="col-md-12" style="float: left;">
-                            <div id="graph-wrapper">
-                            </div>
-                        </div>
-                        <div id="lang-container" class="col-md-12">
-                            <div class="col-md-4">
-                                <div id="lemmatizer-container" class="col-md-12">
-                                    <div class="title"><h1><fmt:message key="search.lemmatize" /></h1></div>
-                                    <input type="checkbox" name="lemmatizer-input" id="lemmatizer-input">
-                                    <input type="hidden" value="false" name="lemmatizer" id="lemmatizer"/>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div id="title-container" class="col-md-12">
-                                    <div class="title"><h1><fmt:message key="search.title" /></h1></div>
-                                    <input type="checkbox" name="title-input" id="title-input">
-                                    <input type="hidden" value="false" name="title-filter" id="title-filter"/>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-12">
-                            <div class="col-md-5">
-                                <div class="title"><h1><fmt:message key="languages" /></h1></div>
-                                <div class="btn-group col-md-12" data-toggle="buttons">
-                                    <label class="btn btn-primary active lang-btn">
-                                        <input type="radio" value="es">
-                                        Castellano <img src="media/img/Spain-32.png" />
-                                    </label>
-                                    <label class="btn btn-primary lang-btn">
-                                        <input type="radio" value="en" >
-                                        English <img src="media/img/United-Kingdom-32.png" />
-                                    </label>
-                                    <label class="btn btn-primary lang-btn">
-                                        <input type="radio" value="fr">
-                                        Français <img src="media/img/France-32.png" />
-                                    </label>
-                                </div>
-                            </div>
-                            <input type="hidden" value="es" name="search-lang" id="search-lang"/>
-                            <div class="col-md-7">
-                                <div class="title"><h1><fmt:message key="discourses" /></h1></div>
-                                <span id="tags-input" class="selectivity-input"></span>
-                                <script>
-                                    var inputItems = [
-                                        '<fmt:message key="discourses.scientific" />',
-                                        '<fmt:message key="discourses.comercial" />',
-                                        '<fmt:message key="discourses.didactic" />',
-                                        '<fmt:message key="discourses.legal" />',
-                                        '<fmt:message key="discourses.organizational" />',
-                                        '<fmt:message key="discourses.press" />',
-                                        '<fmt:message key="discourses.technical" />'];
-                                    $('#tags-input').selectivity({
-                                        items: inputItems,
-                                        multiple: true,
-                                        tokenSeparators: [' '],
-                                        value: [
-                                            '<fmt:message key="discourses.scientific" />',
-                                            '<fmt:message key="discourses.comercial" />',
-                                            '<fmt:message key="discourses.didactic" />',
-                                            '<fmt:message key="discourses.legal" />',
-                                            '<fmt:message key="discourses.organizational" />',
-                                            '<fmt:message key="discourses.press" />',
-                                            '<fmt:message key="discourses.technical" />'
-                                        ],
-                                        backspaceHighlightsBeforeDelete: true,
-                                    });
-                                </script> 
-                            </div>
-                        </div>
-                        <div class="col-md-12" style="padding-bottom: 10px; float: left;">
-                            <div class="col-md-12" >
-                                <div class="title"><h1><fmt:message key="orden" /></h1></div>
-                                <div class="btn-group col-md-12" data-toggle="buttons">
+                        <div class="col-md-12" style="float: left; margin-top: 20px; padding-left: 0px !important;">
+                            <div class="col-md-6 discourse-wrapper" style="padding-left: 0px !important;">
+                                <div class="title col-md-3" style="margin-top: -5px;"><h1><fmt:message key="orden" />:</h1></div>
+                                <div class="btn-group col-md-8 col-md-offset-1" data-toggle="buttons">
                                     <label class="btn btn-primary active order">
                                         <input type="radio" value="">
                                         <fmt:message key="orden.prioridad" />
@@ -162,10 +104,9 @@
                                     </label>
                                 </div>
                             </div>
-                            <div class="col-md-6" id="skip-grams-container" style="display: none;">
-
-                                <div class="title"><h1><fmt:message key="orden.skip" /></h1></div>
-                                <div class="btn-group col-md-12" data-toggle="buttons">
+                            <div class="col-md-5 discourse-wrapper" id="skip-grams-container" style="display: none;">
+                                <div class="title col-md-6" style="margin-top: -5px;"><h1><fmt:message key="orden.skip" />: </h1></div>
+                                <div class="btn-group col-md-6" data-toggle="buttons">
                                     <label class="btn btn-primary active skipg">
                                         <input type="radio" value="1">1
                                     </label>
@@ -183,7 +124,49 @@
                                 <input type="hidden" value="1" name="skip-grams" id="skip-grams"/>
                             </div>
                         </div>
-                    </form>
+                    </div>
+                    <div class="col-md-4" id="switches-container">
+                        <div id="lemmatizer-container" class="col-md-12 switch-container">
+                            <div class="title col-md-4 col-md-offset-3"><h1><fmt:message key="search.lemmatize" /></h1></div>
+                            <div class="col-md-4">
+                                <input class="switch-button" type="checkbox" name="lemmatizer-input" id="lemmatizer-input">
+                            </div>
+                            <div class="col-md-1 switch-info" title="Enable the switch means that terms must appears exactly as they are typed in the search bar. When the switch is disabled the terms could match only in the root."><i class="glyphicon glyphicon-info-sign"></i></div>
+                            <input type="hidden" value="false" name="lemmatizer" id="lemmatizer"/>
+                        </div>
+                        <div id="title-container" class="col-md-12 switch-container">
+                            <div class="title col-md-4 col-md-offset-3"><h1><fmt:message key="search.title" /></h1></div>
+                            <div class="col-md-4">
+                                <input class="switch-button" type="checkbox" name="title-input" id="title-input">
+                            </div>
+                            <div class="col-md-1 switch-info" title="Enable the switch means that terms must appears only in the title of the text."><i class="glyphicon glyphicon-info-sign"></i></div>
+                            <input type="hidden" value="false" name="title-filter" id="title-filter"/>
+                        </div>
+                        <div id="order-container" class="col-md-12 switch-container">
+                            <div class="title col-md-4 col-md-offset-3"><h1><fmt:message key="search.ordered" /></h1></div>
+                            <div class="col-md-4">
+                                <input class="switch-button" type="checkbox" name="order-input" id="order-input">
+                            </div>
+                            <div class="col-md-1 switch-info" title="Enable the switch means that the terms typed in the search bar must appear in the text with the same order that they appear in the bar. When the switch is disabled the order of the terms does not matters."><i class="glyphicon glyphicon-info-sign"></i></div>
+                            <input type="hidden" value="false" name="order-filter" id="order-filter"/>
+                        </div>
+                        <div id="bilingue-container" class="col-md-12 switch-container">
+                            <div class="title col-md-4 col-md-offset-3"><h1><fmt:message key="search.bilingue" /></h1></div>
+                            <div class="col-md-4">
+                                <input class="switch-button" type="checkbox" name="bilingue-input" id="bilingue-input">
+                            </div>
+                            <div class="col-md-1 switch-info" title="Enable the switch means that the search is only for text with translation in at least the two languages selected."><i class="glyphicon glyphicon-info-sign"></i></div>
+                            <input type="hidden" value="false" name="bilingue-filter" id="bilingue-filter"/>
+                        </div>
+                        <div id="distance-container" class="col-md-12 switch-container">
+                            <div class="title col-md-4 col-md-offset-3"><h1><fmt:message key="search.distance" /></h1></div>
+                            <div class="col-md-4">
+                                <input class="switch-button" type="checkbox" name="distance-input" id="distance-input">
+                            </div>
+                            <div class="col-md-1 switch-info" title="Enable the switch means that the distance between terms must be exactly the specified. When the switch is disabled the terms could appear in any of the 'n' next positions from the term before."><i class="glyphicon glyphicon-info-sign"></i></div>
+                            <input type="hidden" value="false" name="distance-filter" id="distance-filter"/>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div id="total-hits" style="display: none; clear: both; text-align: center;" class="col-md-12">Se han encontrado <b id="num-docs"></b> parrafo(s)</div>
@@ -194,12 +177,13 @@
         </div>
 
         <div id="config-dialog">
-            <p id="config-dialig-note">Click on the bordered boxes to set the word as main</p>
-            <div id="search-config-body-content" class="col-md-12">
+            <p class="col-md-12">Click in any node but the last to configure the search.</p>
+            <div id="arrows-container" class="col-md-12" style="float: left;">
+                <div id="graph-wrapper"></div>
             </div>
+            <div id="search-config-body-content" class="col-md-12" style="float: left;"></div>
             <div class="col-md-4 right" id="config-footer">
                 <button type="button" class="btn btn-danger" id="config-close">Close</button>
-                <button type="button" class="btn btn-success" id="config-save">Save changes</button>
             </div>
         </div>
 
@@ -231,18 +215,23 @@
             </div>
         </footer>
         <script>
-            $("#lemmatizer-input, #title-input").switchButton({
+            $("#lemmatizer-input, #title-input, #bilingue-input").switchButton({
                 on_label: '<fmt:message key="yes" />',
                 off_label: '<fmt:message key="no" />'
+            });
+            $("#order-input, #distance-input").switchButton({
+                on_label: '<fmt:message key="yes" />',
+                off_label: '<fmt:message key="no" />',
+                checked: true
             });
 
             $("#config-dialog").dialog({
                 autoOpen: false,
                 modal: true,
                 title: "Configure Search Criteria",
-                width: 800,
+                width: 1200,
                 height: 400,
-                minWidth : 800,
+                minWidth: 1000,
                 show: {
                     effect: "clip",
                     duration: 1000
@@ -251,6 +240,33 @@
                     effect: "clip",
                     duration: 1000
                 }
+            });
+
+            var inputItems = [
+                '<fmt:message key="discourses.scientific" />',
+                '<fmt:message key="discourses.comercial" />',
+                '<fmt:message key="discourses.didactic" />',
+                '<fmt:message key="discourses.legal" />',
+                '<fmt:message key="discourses.organizational" />',
+                '<fmt:message key="discourses.press" />',
+                '<fmt:message key="discourses.technical" />'];
+            $('#tags-input').selectivity({
+                items: inputItems,
+                multiple: true,
+                tokenSeparators: [' '],
+                value: [
+                    '<fmt:message key="discourses.scientific" />',
+                    '<fmt:message key="discourses.comercial" />',
+                    '<fmt:message key="discourses.didactic" />',
+                    '<fmt:message key="discourses.legal" />',
+                    '<fmt:message key="discourses.organizational" />',
+                    '<fmt:message key="discourses.press" />',
+                    '<fmt:message key="discourses.technical" />'
+                ],
+                backspaceHighlightsBeforeDelete: true,
+            });
+            $(function () {
+                $(document).tooltip();
             });
         </script>
     </body>
