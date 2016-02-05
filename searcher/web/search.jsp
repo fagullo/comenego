@@ -40,20 +40,41 @@
         <title><fmt:message key="index.title" /></title>
     </head>
     <body>
-        <header class="col-md-8 col-md-offset-2">
-            <img src="media/img/logocomenegoportada.jpg" alt="COMENEGO" />
+        <header class="col-md-12" style="padding: 0px 0px 0px 0px !important;">
+            <nav class="navbar navbar-default">
+                <div class="container-fluid">
+                    <!-- Brand and toggle get grouped for better mobile display -->
+                    <div class="navbar-header">
+                        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                            <span class="sr-only">Toggle navigation</span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </button>
+                        <a class="navbar-brand" href="#"><img src="media/img/logocomenegoportada.jpg" alt="COMENEGO" width="150" /></a>
+                    </div>
+                    <div class="collapse navbar-collapse container">
+                        <ul class="nav navbar-nav navbar-right">
+                            <li style="margin-right: 10px; margin-top: -2px;">
+                                <p class="navbar-btn">
+                                    <%
+                                        if (session.getAttribute("userID") == null) {
+                                    %>
+                                    <a href="login.jsp" class="btn btn-success" id="login-btn"><fmt:message key="index.login" /></a>
+                                    <%
+                                    } else {
+                                    %>
+                                    <a href="/searcher/services/login/logout" class="btn btn-danger" id="login-btn"><fmt:message key="index.logout" /></a>
+                                    <%
+                                        }
+                                    %>
+                                </p>
+                            </li>
+                        </ul>
+                    </div>
+                </div><!-- /.container-fluid -->
+            </nav>
             <!--<div class="col-md-12"><fmt:message key="index.welcome" /></div>-->
-            <%
-                if (session.getAttribute("userID") == null) {
-            %>
-            <a href="login.jsp" class="btn btn-success" id="login-btn"><i class="glyphicon glyphicon-user"></i>&nbsp;<fmt:message key="index.login" /></a>
-            <%
-            } else {
-            %>
-            <a href="/searcher/services/login/logout" class="btn btn-danger" id="login-btn"><i class="glyphicon glyphicon-user"></i>&nbsp;<fmt:message key="index.logout" /></a>
-            <%
-                }
-            %>
         </header>
         <div id="content" class="col-md-10 col-md-offset-1">
             <div class="panel panel-info">
