@@ -3,6 +3,11 @@
     Author     : paco
 */
 
+body, header {
+    padding: 0px 0px 0px 0px !important;
+    margin: 0px 0px 0px 0px !important;
+}
+
 footer, header {
     text-align: center;
     margin-bottom: 15px;
@@ -14,13 +19,14 @@ footer, header {
 }
 
 .title h1 {
-    font-size: 1em;
+    font-size: 0.9em;
     font-weight: bold;
     margin-top: 0px;
 }
 
 .switch-container {
     float: left;
+    padding-left: 0px !important;
 }
 
 .language-wrapper, discourse-wrapper {
@@ -48,8 +54,17 @@ footer, header {
 }
 
 .selectivity-multiple-input-container {
-    min-width: 750px !important;
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    /*min-width: 750px !important;*/
 }
+
+.selectivity-multiple-selected-item {
+    font-size: 0.8em;
+    font-weight: bolder;
+}
+
 .discourse-wrapper .title {
     padding-top: 16px;
 }

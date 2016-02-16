@@ -80,7 +80,7 @@
             <div class="panel panel-info">
                 <div class="panel-heading"><fmt:message key="search.configuration" /></div>
                 <div class="panel-body">
-                    <div class="col-md-12" id="form-wrapper">
+                    <div class="col-md-12" id="form-wrapper" style="float:left;">
                         <form action="javascript:search()" method="POST" class="form-inline col-md-8 col-md-offset-2" role="form">
                             <div class="input-group col-md-12">
                                 <div class="input-group-btn">
@@ -104,13 +104,13 @@
                     </div>
                     <div class="col-md-8">
                         <div class="col-md-12 discourse-wrapper">
-                            <div class="title col-md-2"><h1><fmt:message key="discourses" />:</h1></div>
-                            <span id="tags-input" class="selectivity-input"></span>
+                            <div class="title col-md-12"><h1><fmt:message key="discourses" />:</h1></div>
+                            <span id="tags-input" class="selectivity-input col-md-12"></span>
                         </div>
                         <div class="col-md-12" style="float: left; margin-top: 20px; padding-left: 0px !important;">
                             <div class="col-md-6 discourse-wrapper" style="padding-left: 0px !important;">
-                                <div class="title col-md-3" style="margin-top: -5px;"><h1><fmt:message key="orden" />:</h1></div>
-                                <div class="btn-group col-md-8 col-md-offset-1" data-toggle="buttons">
+                                <div class="title col-md-12" style="margin-top: -5px;"><h1><fmt:message key="orden" />:</h1></div>
+                                <div class="btn-group col-md-12" data-toggle="buttons">
                                     <label class="btn btn-primary active order">
                                         <input type="radio" value="">
                                         <fmt:message key="orden.prioridad" />
@@ -125,9 +125,10 @@
                                     </label>
                                 </div>
                             </div>
-                            <div class="col-md-5 discourse-wrapper" id="skip-grams-container" style="display: none;">
-                                <div class="title col-md-6" style="margin-top: -5px;"><h1><fmt:message key="orden.skip" />: </h1></div>
-                                <div class="btn-group col-md-6" data-toggle="buttons">
+                            <!--<div class="col-md-6 discourse-wrapper" id="skip-grams-container">-->
+                            <div class="col-md-6 discourse-wrapper" id="skip-grams-container" style="display: none;">
+                                <div class="title col-md-12" style="margin-top: -5px;"><h1><fmt:message key="orden.skip" />: </h1></div>
+                                <div class="btn-group col-md-12" data-toggle="buttons">
                                     <label class="btn btn-primary active skipg">
                                         <input type="radio" value="1">1
                                     </label>
@@ -148,40 +149,40 @@
                     </div>
                     <div class="col-md-4" id="switches-container">
                         <div id="lemmatizer-container" class="col-md-12 switch-container">
-                            <div class="title col-md-4 col-md-offset-3"><h1><fmt:message key="search.lemmatize" /></h1></div>
-                            <div class="col-md-4">
+                            <div class="title col-md-4"><h1><fmt:message key="search.lemmatize" /></h1></div>
+                            <div class="col-md-6">
                                 <input class="switch-button" type="checkbox" name="lemmatizer-input" id="lemmatizer-input">
                             </div>
                             <div class="col-md-1 switch-info" title="Enable the switch means that terms must appears exactly as they are typed in the search bar. When the switch is disabled the terms could match only in the root."><i class="glyphicon glyphicon-info-sign"></i></div>
                             <input type="hidden" value="false" name="lemmatizer" id="lemmatizer"/>
                         </div>
                         <div id="title-container" class="col-md-12 switch-container">
-                            <div class="title col-md-4 col-md-offset-3"><h1><fmt:message key="search.title" /></h1></div>
-                            <div class="col-md-4">
+                            <div class="title col-md-4"><h1><fmt:message key="search.title" /></h1></div>
+                            <div class="col-md-6">
                                 <input class="switch-button" type="checkbox" name="title-input" id="title-input">
                             </div>
                             <div class="col-md-1 switch-info" title="Enable the switch means that terms must appears only in the title of the text."><i class="glyphicon glyphicon-info-sign"></i></div>
                             <input type="hidden" value="false" name="title-filter" id="title-filter"/>
                         </div>
                         <div id="order-container" class="col-md-12 switch-container">
-                            <div class="title col-md-4 col-md-offset-3"><h1><fmt:message key="search.ordered" /></h1></div>
-                            <div class="col-md-4">
+                            <div class="title col-md-4"><h1><fmt:message key="search.ordered" /></h1></div>
+                            <div class="col-md-6">
                                 <input class="switch-button" type="checkbox" name="order-input" id="order-input">
                             </div>
                             <div class="col-md-1 switch-info" title="Enable the switch means that the terms typed in the search bar must appear in the text with the same order that they appear in the bar. When the switch is disabled the order of the terms does not matters."><i class="glyphicon glyphicon-info-sign"></i></div>
                             <input type="hidden" value="false" name="order-filter" id="order-filter"/>
                         </div>
                         <div id="bilingue-container" class="col-md-12 switch-container">
-                            <div class="title col-md-4 col-md-offset-3"><h1><fmt:message key="search.bilingue" /></h1></div>
-                            <div class="col-md-4">
+                            <div class="title col-md-4"><h1><fmt:message key="search.bilingue" /></h1></div>
+                            <div class="col-md-6">
                                 <input class="switch-button" type="checkbox" name="bilingue-input" id="bilingue-input">
                             </div>
                             <div class="col-md-1 switch-info" title="Enable the switch means that the search is only for text with translation in at least the two languages selected."><i class="glyphicon glyphicon-info-sign"></i></div>
                             <input type="hidden" value="false" name="bilingue-filter" id="bilingue-filter"/>
                         </div>
                         <div id="distance-container" class="col-md-12 switch-container">
-                            <div class="title col-md-4 col-md-offset-3"><h1><fmt:message key="search.distance" /></h1></div>
-                            <div class="col-md-4">
+                            <div class="title col-md-4"><h1><fmt:message key="search.distance" /></h1></div>
+                            <div class="col-md-6">
                                 <input class="switch-button" type="checkbox" name="distance-input" id="distance-input">
                             </div>
                             <div class="col-md-1 switch-info" title="Enable the switch means that the distance between terms must be exactly the specified. When the switch is disabled the terms could appear in any of the 'n' next positions from the term before."><i class="glyphicon glyphicon-info-sign"></i></div>
