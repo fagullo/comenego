@@ -8,26 +8,26 @@ var searchNodes = [];
 var currentTargetNode = -1;
 
 
-(function ($) {
-    $.fn.hasScrollBar = function () {
+(function($) {
+    $.fn.hasScrollBar = function() {
         return this.get(0).scrollWidth > this.width();
     }
 })(jQuery);
 
 
 $(document).on({
-    ajaxStart: function () {
+    ajaxStart: function() {
         $("#pleaseWaitDialog").modal();
         $("body").addClass("loading");
     },
-    ajaxStop: function () {
+    ajaxStop: function() {
         $("body").removeClass("loading");
     }
 });
 
-$(document).ready(function () {
+$(document).ready(function() {
 
-    $('#tags-input').on("change", function (event) {
+    $('#tags-input').on("change", function(event) {
         if (event.added) {
             var index = $.inArray(event.added.id, inputItems);
             if (index < 0) {
@@ -47,7 +47,7 @@ $(document).ready(function () {
         }
     });
 
-    $("#lemmatizer-input").change(function () {
+    $("#lemmatizer-input").change(function() {
         if ($("#lemmatizer").val() === "false") {
             $("#lemmatizer").val("true");
         } else {
@@ -55,7 +55,7 @@ $(document).ready(function () {
         }
     });
 
-    $("#title-input").change(function () {
+    $("#title-input").change(function() {
         if ($("#title-filter").val() === "false") {
             $("#title-filter").val("true");
         } else {
@@ -63,7 +63,7 @@ $(document).ready(function () {
         }
     });
 
-    $("#subsearch").click(function () {
+    $("#subsearch").click(function() {
 
         if (!$("#subsearch").hasClass("disabled")) {
             $("#subsearch").addClass("disabled");
@@ -72,7 +72,7 @@ $(document).ready(function () {
         }
     });
 
-    $(".order").click(function () {
+    $(".order").click(function() {
         $('#search-sort').val($(this).children('input').prop('value'));
         $(".order").removeClass("active");
         $(this).addClass("active");
@@ -84,14 +84,14 @@ $(document).ready(function () {
         return false; //Prevent default action.
     });
 
-    $(".skipg").click(function () {
+    $(".skipg").click(function() {
         $('#skip-grams').val($(this).children('input').prop('value'));
         $(".skipg").removeClass("active");
         $(this).addClass("active");
         return false; //Prevent default action.
     });
 
-    $("#config-button").click(function () {
+    $("#config-button").click(function() {
         calculateSearchNodes();
         fillGraph();
         if (searchNodes.length > maxNodes * 3) {
@@ -103,23 +103,23 @@ $(document).ready(function () {
         $("#config-dialog").dialog("open");
     });
 
-    $("#config-close").click(function () {
+    $("#config-close").click(function() {
         $("#config-dialog").dialog("close");
     });
 
-    $(".lang-selector").click(function () {
+    $(".lang-selector").click(function() {
         $("#lang-icon").attr("src", $(this).attr("data-img"));
         $("#lang-icon").attr("data-value", $(this).attr("data-value"));
     });
 
-    $(document).on("click", ".addDistance", function () {
+    $(document).on("click", ".addDistance", function() {
         var distanceValue = parseInt($("#word-distance").html());
         $("#word-distance").html(distanceValue + 1);
         searchNodes[currentTargetNode].distance = distanceValue + 1;
         fillGraph();
     });
 
-    $(document).on("click", ".subDistance", function () {
+    $(document).on("click", ".subDistance", function() {
         var distanceValue = parseInt($("#word-distance").html()) - 1;
         if (distanceValue > -1) {
             $("#word-distance").html(distanceValue);
@@ -128,7 +128,7 @@ $(document).ready(function () {
         fillGraph();
     });
 
-    $(document).on("click", ".displayable-term", function () {
+    $(document).on("click", ".displayable-term", function() {
         $(".displayable-term-main").removeClass("displayable-term-main");
         $(this).addClass("displayable-term-main");
         var wordID = $(this).attr("id");
@@ -143,7 +143,7 @@ $(document).ready(function () {
         fillGraph();
     });
 
-    $(document).on("click", ".arrowsandboxes-node", function () {
+    $(document).on("click", ".arrowsandboxes-node", function() {
         var arrows = $(".arrowsandboxes-node");
         var labels = $(".arrowsandboxes-label");
 
@@ -176,32 +176,27 @@ function search(page, letter, subsearch) {
             $("#subsearch").removeClass("disabled");
         }
     }
-    var discourses = "";
+    var discourses = [];
     var sorted;
-    $("input[name='discourses-selection']:checked").each(function () {
-        discourses += $(this).val() + " ";
+    $("input[name='discourses-selection']:checked").each(function() {
+        discourses.push($(this).val());
     });
 
-    var data = {
-        languages: $("#lang-icon").attr("data-value"),
-        discourses: discourses,
-        page: page,
-        letter: letter,
-        sortField: $('#search-sort').val(),
-        position: $('#skip-grams').val(),
-        lemma: $("#lemmatizer").val(),
-        title: $("#title-filter").val()
-    };
-    if (subsearch && lastSearch != null) {
-        data.search = $("#search").val();
-        data.subsearch = lastSearch;
-    } else {
-        data.search = $("#search").val();
-        data.subsearch = null;
-        data.lastSearch = $("#search").val();
-    }
-
     calculateSearchNodes();
+
+    var data = {
+        searchNodes: searchNodes,
+        discourses: discoursesSelected,
+        language: $("#lang-icon").attr("data-value"),
+        page: page,
+        letter: null,
+        lematize: $("#lemmatizer").val(),
+        title: $("#title-filter").val(),
+        order: false,
+        distance: false,
+        sortField: $('#search-sort').val(),
+        sortPosition: $('#skip-grams').val()
+    };
 
     console.log(searchNodes);
     console.log(discoursesSelected);
@@ -209,67 +204,72 @@ function search(page, letter, subsearch) {
     console.log(page);
     console.log(letter);
 
-//    $.ajax({
-//        type: "POST",
-//        url: "/searcher/services/comenego/load",
+    $.ajax({
+        type: "POST",
+        url: "/searcher/services/comenego/search",
+        headers: {
+            Accept: "application/json; charset=utf-8",
+            "Content-Type": "application/json; charset=utf-8"
+        },
 //        contentType: "application/json; charset=ISO-8859-1",
-//        data: JSON.stringify(data),
-//        success: function (searchresult) {
-//            lastSearch = {
-//                text: $("#search").val(),
-//            };
-//            if ($("#title-filter").val() === "false") {
-//                lastSearch.field = "text";
-//            } else {
-//                lastSearch.field = "title";
-//            }
-//
-//            if (!searchresult.matches || searchresult.matches.length === 0) {
-//                $("#paginador").html("");
-//                $("#hits").html(
-//                        "<div class='alert alert-warning alert-dismissable'>"
-//                        + "<button type='button' class='close' data-dismiss='alert' aria-hidden='true'>&times;</button>"
-//                        + "No se ha encontrado ningún resultado.</div>");
-//                $("#num-docs").html(0);
-//            } else {
-//                var matches = searchresult.matches;
-//                sorted = searchresult.sorted;
-//                $("#total-hits").show();
-//                $("#num-docs").html(searchresult.numDocs);
-//                var numPages = searchresult.numPages;
-//                $("#hits").empty();
-//                for (var i = 0; i < matches.length; i++) {
-//                    var resultObj = matches[i];
-//                    var link = resultObj.url;
-//                    var discourses = resultObj.discourses;
-//                    var snippet = resultObj.snippet.trim();
-//                    var matchPosition = snippet.indexOf("</b>");
-//                    var spaces = "";
-//                    var targetPosition = 80;
-//                    if (matchPosition > targetPosition) {
-//                        snippet = snippet.substr(matchPosition - (targetPosition - 1));
-//                    } else {
-//                        for (var j = matchPosition; j < (targetPosition - 1); j++) {
-//                            spaces += "&nbsp;";
-//                        }
-//                    }
-//                    var listItem = "<li class='snippet' style='padding: 0 !important;'>"
-//                            + "<div class='col-lg-10 col-md-10 col-sm-10 col-xs-10' style='padding: 0 !important;'>" + spaces + snippet + "</div>"
-//                            + "<div class='col-lg-2 col-md-2 col-sm-2 col-xs-2' style='text-align: right; padding: 0 !important;'>"
-//                            + "<a href='" + link + "' target='_blank'><div class='glyphicon glyphicon-link'></div></a> " + discourses + "</div>"
-//                            + "</li>";
-////                $("#hits").append("<li class='snippet'>" + spaces + snippet + "</li>");
-//                    $("#hits").append(listItem);
-//                }
-//                getPaginator(parseInt(page), numPages, letter, $("#search").val(), sorted);
-//            }
-//        },
-//        error: function (XMLHttpRequest, textStatus, errorThrown) {
-//            if (XMLHttpRequest.status === 401) {
-//                window.location.href = "login.jsp";
-//            }
-//        }
-//    });
+        data: JSON.stringify(data),
+        success: function(searchresult) {
+            console.log(searchresult.length);
+            lastSearch = {
+                text: $("#search").val()
+            };
+            if ($("#title-filter").val() === "false") {
+                lastSearch.field = "text";
+            } else {
+                lastSearch.field = "title";
+            }
+
+            if (!searchresult.matches || searchresult.matches.length === 0) {
+                $("#paginador").html("");
+                $("#hits").html(
+                        "<div class='alert alert-warning alert-dismissable'>"
+                        + "<button type='button' class='close' data-dismiss='alert' aria-hidden='true'>&times;</button>"
+                        + "No se ha encontrado ningún resultado.</div>");
+                $("#num-docs").html(0);
+            } else {
+                var matches = searchresult.matches;
+                sorted = searchresult.sorted;
+                $("#total-hits").show();
+                $("#num-docs").html(searchresult.numDocs);
+                var numPages = searchresult.numPages;
+                $("#hits").empty();
+                for (var i = 0; i < matches.length; i++) {
+                    var resultObj = matches[i];
+                    var link = resultObj.url;
+                    var discourses = resultObj.discourses;
+                    var snippet = resultObj.snippet.trim();
+                    var matchPosition = snippet.indexOf("</b>");
+                    var spaces = "";
+                    var targetPosition = 80;
+                    if (matchPosition > targetPosition) {
+                        snippet = snippet.substr(matchPosition - (targetPosition - 1));
+                    } else {
+                        for (var j = matchPosition; j < (targetPosition - 1); j++) {
+                            spaces += "&nbsp;";
+                        }
+                    }
+                    var listItem = "<li class='snippet' style='padding: 0 !important;'>"
+                            + "<div class='col-lg-10 col-md-10 col-sm-10 col-xs-10' style='padding: 0 !important;'>" + spaces + snippet + "</div>"
+                            + "<div class='col-lg-2 col-md-2 col-sm-2 col-xs-2' style='text-align: right; padding: 0 !important;'>"
+                            + "<a href='" + link + "' target='_blank'><div class='glyphicon glyphicon-link'></div></a> " + discourses + "</div>"
+                            + "</li>";
+//                $("#hits").append("<li class='snippet'>" + spaces + snippet + "</li>");
+                    $("#hits").append(listItem);
+                }
+                getPaginator(parseInt(page), numPages, letter, $("#search").val(), sorted);
+            }
+        },
+        error: function(XMLHttpRequest, textStatus, errorThrown) {
+            if (XMLHttpRequest.status === 401) {
+                window.location.href = "login.jsp";
+            }
+        }
+    });
 }
 
 function getPaginator(current, total, letter, text, sorted) {
@@ -457,14 +457,14 @@ function calculateSearchNodes() {
 }
 
 function recalculateNodes(content) {
-    if ( content.length !== searchNodes.length) {
+    if (content.length !== searchNodes.length) {
         return true;
     }
     for (var i = 0; i < content.length; i++) {
-        if ( searchNodes[i].word !== content[i] ) {
+        if (searchNodes[i].word !== content[i]) {
             return true;
         }
     }
-    
+
     return false;
 }

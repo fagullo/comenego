@@ -62,7 +62,16 @@ public class Searcher {
 
     private static final int DOCS_BY_PAGE = 50;
 
-    public List<LuceneSnippet> getTextSnippets(int termSize, List<LuceneSnippet> snippets, ScoreDoc sd, IndexSearcher indexSearcher, Connection connection, Analyzer analyzer, Highlighter textHighlighter, SearchParameters params) throws IOException, SQLException, InvalidTokenOffsetsException {
+    public List<LuceneSnippet> getTextSnippets(
+            int termSize,
+            List<LuceneSnippet> snippets,
+            ScoreDoc sd,
+            IndexSearcher indexSearcher,
+            Connection connection,
+            Analyzer analyzer,
+            Highlighter textHighlighter,
+            boolean isSubSearch
+    ) throws IOException, SQLException, InvalidTokenOffsetsException {
         Document doc = indexSearcher.doc(sd.doc);
         int paragraphID = Integer.parseInt(doc.get("paragraphID"));
         int textID = Integer.parseInt(doc.get("textID"));
@@ -91,7 +100,7 @@ public class Searcher {
                 if (frag.getScore() > 0) {
                     String snippet = frag.toString().replaceAll("[\n\r]", "").replaceAll("</b> <b>", " ").trim();
                     int numMatches = StringUtils.countMatches(snippet, "<b>");
-                    if (numMatches > 1 && !params.isSubSearch()) {
+                    if (numMatches > 1 && !isSubSearch) {
                         int start = 0;
                         int end = 0;
                         for (int i = 0; i < numMatches; i++) {
@@ -124,7 +133,15 @@ public class Searcher {
         return snippets;
     }
 
-    public List<LuceneSnippet> getTitleSnippets(int termSize, List<LuceneSnippet> snippets, ScoreDoc sd, IndexSearcher indexSearcher, Connection connection, Analyzer analyzer, Highlighter textHighlighter, SearchParameters params) throws IOException, SQLException, InvalidTokenOffsetsException {
+    public List<LuceneSnippet> getTitleSnippets(
+            int termSize,
+            List<LuceneSnippet> snippets,
+            ScoreDoc sd,
+            IndexSearcher indexSearcher,
+            Connection connection,
+            Analyzer analyzer,
+            Highlighter textHighlighter
+    ) throws IOException, SQLException, InvalidTokenOffsetsException {
         Document doc = indexSearcher.doc(sd.doc);
         int textID = Integer.parseInt(doc.get("textID"));
         PreparedStatement textPS = connection.prepareStatement("SELECT t.title, t.url FROM text t WHERE t.id = ?;");
@@ -184,11 +201,37 @@ public class Searcher {
         return snippets;
     }
 
-    public List<LuceneSnippet> getSnippets(int termSize, List<LuceneSnippet> snippets, ScoreDoc sd, IndexSearcher indexSearcher, Connection connection, Analyzer analyzer, Highlighter textHighlighter, SearchParameters params) throws IOException, SQLException, InvalidTokenOffsetsException {
+    public List<LuceneSnippet> getSnippets(
+            int termSize,
+            List<LuceneSnippet> snippets,
+            ScoreDoc sd,
+            IndexSearcher indexSearcher,
+            Connection connection,
+            Analyzer analyzer,
+            Highlighter textHighlighter,
+            SearchParameters params
+    ) throws IOException, SQLException, InvalidTokenOffsetsException {
         if (params.isTitle()) {
-            return getTitleSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter, params);
+            return getTitleSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter);
         } else {
-            return getTextSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter, params);
+            return getTextSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter, params.isSubSearch());
+        }
+    }
+    
+    public List<LuceneSnippet> getSnippets(
+            int termSize,
+            List<LuceneSnippet> snippets,
+            ScoreDoc sd,
+            IndexSearcher indexSearcher,
+            Connection connection,
+            Analyzer analyzer,
+            Highlighter textHighlighter,
+            SearchConfiguration params
+    ) throws IOException, SQLException, InvalidTokenOffsetsException {
+        if (params.isTitle()) {
+            return getTitleSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter);
+        } else {
+            return getTextSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter, false);
         }
     }
 
@@ -269,7 +312,17 @@ public class Searcher {
      * @return a boolean query which contains all the search criteria.
      * @throws org.apache.lucene.queryparser.classic.ParseException
      */
-    public BooleanQuery prepareQuery(String searchText, String discourses, Analyzer analyzer, String sortField, int position, boolean isLetter, String letter, SubSearch subSearch, boolean isTitle) throws ParseException {
+    public BooleanQuery prepareQuery(
+            String searchText,
+            String discourses,
+            Analyzer analyzer,
+            String sortField,
+            int position,
+            boolean isLetter,
+            String letter,
+            SubSearch subSearch,
+            boolean isTitle
+    ) throws ParseException {
         if (isLetter) {
             return _prepareLetterQuery(searchText, discourses, analyzer, letter, position);
         } else if (isTitle) {
@@ -348,11 +401,11 @@ public class Searcher {
 
     private BooleanQuery _prepareQuotesQuery(String searchText) throws ParseException {
         BooleanQuery textBooleanQuery = new BooleanQuery();
-        
+
         String text = searchText.substring(1, searchText.length() - 1);
         String[] words = text.split(" ");
         textBooleanQuery.add(_prepareSpanQuery(words, "text", 0), BooleanClause.Occur.MUST);
-        
+
         return textBooleanQuery;
     }
 
@@ -376,12 +429,12 @@ public class Searcher {
 
     private BooleanQuery _prepareQuerySubSearch(String searchText, SubSearch lastSearch, String discourses, Analyzer analyzer) throws ParseException {
         BooleanQuery searchQuery = new BooleanQuery();
-        
+
         SpanQuery[] clauses = new SpanQuery[]{
             new SpanTermQuery(new Term(searchText, "text")),
             new SpanTermQuery(new Term(lastSearch.getText(), lastSearch.getField()))
         };
-        
+
         searchQuery.add(_prepareSpanQuery(clauses, Integer.MAX_VALUE), BooleanClause.Occur.MUST);
 
         QueryParser discourseParser = new QueryParser(Version.LUCENE_47, "discourse", analyzer);
@@ -390,20 +443,20 @@ public class Searcher {
 
         return searchQuery;
     }
-    
-    private SpanNearQuery _prepareSpanQuery(String [] searchText, String term, int slop) throws ParseException {
+
+    private SpanNearQuery _prepareSpanQuery(String[] searchText, String term, int slop) throws ParseException {
 
         SpanQuery[] clauses = new SpanQuery[searchText.length];
-        
-        for ( int i = 0; i < searchText.length; i++ ) {
+
+        for (int i = 0; i < searchText.length; i++) {
             clauses[i] = new SpanTermQuery(new Term(term, searchText[i]));
         }
 
         SpanNearQuery textQuery = new SpanNearQuery(clauses, slop, false);
         return textQuery;
     }
-    
-    private SpanNearQuery _prepareSpanQuery(SpanQuery [] clauses, int slop) throws ParseException {
+
+    private SpanNearQuery _prepareSpanQuery(SpanQuery[] clauses, int slop) throws ParseException {
         SpanNearQuery textQuery = new SpanNearQuery(clauses, slop, false);
         return textQuery;
     }
@@ -414,6 +467,10 @@ public class Searcher {
         } else {
             return null;
         }
+    }
+
+    public Analyzer getAnalyzer(String language, boolean lemma) {
+        return AnalyzerFactory.getInstance().getAnalyzer(language, lemma);
     }
 
     public void setSnippet(LuceneSnippet snippet, String order, int position) {

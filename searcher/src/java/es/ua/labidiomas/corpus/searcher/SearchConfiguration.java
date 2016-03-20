@@ -85,10 +85,20 @@ public class SearchConfiguration {
         this.searchNodes = searchNodes;
     }
 
+    public String getDiscoursesAsString() {
+        StringBuilder discourses = new StringBuilder();
+
+        for (String discourse : this.discourses) {
+            discourses.append(discourse).append(" ");
+        }
+
+        return discourses.toString().trim();
+    }
+
     public List<String> getDiscourses() {
         return discourses;
     }
-
+    
     public void setDiscourses(List<String> discourses) {
         this.discourses = discourses;
     }
@@ -163,5 +173,23 @@ public class SearchConfiguration {
 
     public void setSortPosition(int sortPosition) {
         this.sortPosition = sortPosition;
+    }
+
+    public boolean isLetterSearch() {
+        return this.letter != null;
+    }
+
+    public String getSearch() {
+        StringBuilder search = new StringBuilder();
+
+        for (SearchNode node : this.searchNodes) {
+            search.append(node.getWord()).append(" ");
+        }
+
+        return search.toString().trim();
+    }
+
+    public SubSearch getSubsearch() {
+        return null;
     }
 }

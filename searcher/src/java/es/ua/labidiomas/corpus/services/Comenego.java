@@ -138,7 +138,7 @@ public class Comenego {
         }
         return Response.status(200).entity(result).build();
     }
-    
+
     @POST
     @Path("search")
     @Produces(MediaType.APPLICATION_JSON)
@@ -149,56 +149,55 @@ public class Comenego {
         }
 
         SearchResponse result = new SearchResponse();
-        
-//        List<LuceneSnippet> snippets = new ArrayList<LuceneSnippet>();
-//        Connection connection = null;
-//        try {
-//            if (parameters.getDiscourses() != null) {
-//                Analyzer analyzer = searcher.getAnalyzer(parameters.getLanguages(), parameters.isLemma());
-//                IndexSearcher indexSearcher = searcher.prepareIndexSearcher(parameters.getLanguages().get(0), parameters.getSortField(), parameters.getSearch(), parameters.isLemma(), parameters.isTitle());
-//                BooleanQuery searchQuery = searcher.prepareQuery(parameters.getSearch(), parameters.getDiscourses(), analyzer,
-//                        parameters.getSortField(), parameters.getPosition(), parameters.isLetterSearch(), parameters.getLetter(),
-//                        parameters.getSubsearch(), parameters.isTitle());
-//                Highlighter textHighlighter = searcher.prepareHighlighter(searchQuery);
-//
-//                TopGroups tg;
-//                tg = searcher.prapareResults(searchQuery, indexSearcher, parameters.getPage());
-//                if (tg != null) {
-//
-//                    GroupDocs[] groupedDocs = tg.groups;
-//                    result.setNumPages((int) Math.ceil(tg.totalGroupedHitCount / DOCS_BY_PAGE));
-//                    result.setNumDocs(tg.totalGroupedHitCount);
-//                    Class.forName("com.mysql.jdbc.Driver");
-//                    connection = DriverManager.getConnection(Config.CONEXION_STRING, Config.DB_USER, Config.DB_PASS);
-//                    for (GroupDocs groupDoc : groupedDocs) {
-////                    GroupDocs groupDoc = groupedDocs[0];
-//                        int offset = (parameters.getPage() - 1) * DOCS_BY_PAGE;
-//                        int numPageResults = parameters.getPage() * DOCS_BY_PAGE;
-//                        int top = Math.min(groupDoc.scoreDocs.length, numPageResults);
-//                        for (int i = offset; i < top; i++) {
-//                            ScoreDoc sd = groupDoc.scoreDocs[i];
-//                            searcher.getSnippets(parameters.getSearch().length(), snippets, sd, indexSearcher, connection, analyzer, textHighlighter, parameters);
-//                        }
-//                    }
-//                }
-//            }
-//            if (parameters.getSortField() != null && !parameters.getSortField().isEmpty()) {
-//                Collections.sort(snippets, new NGramsComparator(parameters.getSortField(), parameters.getPosition(), new HashMap<String, String>()));
-//                for (LuceneSnippet sn : snippets) {
-//                    searcher.setSnippet(sn, parameters.getSortField(), parameters.getPosition());
-//                }
-//            }
-//            result.setMatches(snippets);
-//            if (parameters.getSortField() == null || parameters.getSortField().isEmpty()) {
-//                result.setSorted(false);
-//            } else {
-//                result.setSorted(true);
-//            }
-//        } finally {
-//            if (connection != null) {
-//                connection.close();
-//            }
-//        }
+        List<LuceneSnippet> snippets = new ArrayList<LuceneSnippet>();
+        Connection connection = null;
+        try {
+            if (parameters.getDiscourses() != null) {
+                Analyzer analyzer = searcher.getAnalyzer(parameters.getLanguage(), parameters.isLematize());
+                IndexSearcher indexSearcher = searcher.prepareIndexSearcher(parameters.getLanguage(), parameters.getSortField(), parameters.getSearch(), parameters.isLematize(), parameters.isTitle());
+                BooleanQuery searchQuery = searcher.prepareQuery(parameters.getSearch(), parameters.getDiscoursesAsString(), analyzer,
+                        parameters.getSortField(), parameters.getSortPosition(), parameters.isLetterSearch(), parameters.getLetter(),
+                        parameters.getSubsearch(), parameters.isTitle());
+                Highlighter textHighlighter = searcher.prepareHighlighter(searchQuery);
+
+                TopGroups tg;
+                tg = searcher.prapareResults(searchQuery, indexSearcher, parameters.getPage());
+                if (tg != null) {
+
+                    GroupDocs[] groupedDocs = tg.groups;
+                    result.setNumPages((int) Math.ceil(tg.totalGroupedHitCount / DOCS_BY_PAGE));
+                    result.setNumDocs(tg.totalGroupedHitCount);
+                    Class.forName("com.mysql.jdbc.Driver");
+                    connection = DriverManager.getConnection(Config.CONEXION_STRING, Config.DB_USER, Config.DB_PASS);
+                    for (GroupDocs groupDoc : groupedDocs) {
+//                    GroupDocs groupDoc = groupedDocs[0];
+                        int offset = (parameters.getPage() - 1) * DOCS_BY_PAGE;
+                        int numPageResults = parameters.getPage() * DOCS_BY_PAGE;
+                        int top = Math.min(groupDoc.scoreDocs.length, numPageResults);
+                        for (int i = offset; i < top; i++) {
+                            ScoreDoc sd = groupDoc.scoreDocs[i];
+                            searcher.getSnippets(parameters.getSearch().length(), snippets, sd, indexSearcher, connection, analyzer, textHighlighter, parameters);
+                        }
+                    }
+                }
+            }
+            if (parameters.getSortField() != null && !parameters.getSortField().isEmpty()) {
+                Collections.sort(snippets, new NGramsComparator(parameters.getSortField(), parameters.getSortPosition(), new HashMap<String, String>()));
+                for (LuceneSnippet sn : snippets) {
+                    searcher.setSnippet(sn, parameters.getSortField(), parameters.getSortPosition());
+                }
+            }
+            result.setMatches(snippets);
+            if (parameters.getSortField() == null || parameters.getSortField().isEmpty()) {
+                result.setSorted(false);
+            } else {
+                result.setSorted(true);
+            }
+        } finally {
+            if (connection != null) {
+                connection.close();
+            }
+        }
         return Response.status(200).entity(result).build();
     }
 
