@@ -8,26 +8,36 @@ var searchNodes = [];
 var currentTargetNode = -1;
 
 
-(function($) {
-    $.fn.hasScrollBar = function() {
+(function ($) {
+    $.fn.hasScrollBar = function () {
         return this.get(0).scrollWidth > this.width();
     }
 })(jQuery);
 
 
 $(document).on({
-    ajaxStart: function() {
+    ajaxStart: function () {
         $("#pleaseWaitDialog").modal();
         $("body").addClass("loading");
     },
-    ajaxStop: function() {
+    ajaxStop: function () {
         $("body").removeClass("loading");
     }
 });
 
-$(document).ready(function() {
+$(document).ready(function () {
 
-    $('#tags-input').on("change", function(event) {
+//    var rowWidth = $("#tr1").css("width");
+//    rowWidth = rowWidth.substring(0, rowWidth.length - 2);
+//    var textWidth = $("#Test").css("width");
+//    textWidth = parseInt(textWidth.substring(0, textWidth.length - 2)) + 6;
+//    $(".td2").attr("width", textWidth + "px");
+//    var total = (rowWidth - textWidth) / 2;
+//    console.log("Total -> " + total);
+//    $(".td1").attr("width", total + "px");
+//    $(".td3").attr("width", total + "px");
+
+    $('#tags-input').on("change", function (event) {
         if (event.added) {
             var index = $.inArray(event.added.id, inputItems);
             if (index < 0) {
@@ -47,7 +57,7 @@ $(document).ready(function() {
         }
     });
 
-    $("#lemmatizer-input").change(function() {
+    $("#lemmatizer-input").change(function () {
         if ($("#lemmatizer").val() === "false") {
             $("#lemmatizer").val("true");
         } else {
@@ -55,7 +65,7 @@ $(document).ready(function() {
         }
     });
 
-    $("#title-input").change(function() {
+    $("#title-input").change(function () {
         if ($("#title-filter").val() === "false") {
             $("#title-filter").val("true");
         } else {
@@ -63,7 +73,7 @@ $(document).ready(function() {
         }
     });
 
-    $("#subsearch").click(function() {
+    $("#subsearch").click(function () {
 
         if (!$("#subsearch").hasClass("disabled")) {
             $("#subsearch").addClass("disabled");
@@ -72,7 +82,7 @@ $(document).ready(function() {
         }
     });
 
-    $(".order").click(function() {
+    $(".order").click(function () {
         $('#search-sort').val($(this).children('input').prop('value'));
         $(".order").removeClass("active");
         $(this).addClass("active");
@@ -84,14 +94,14 @@ $(document).ready(function() {
         return false; //Prevent default action.
     });
 
-    $(".skipg").click(function() {
+    $(".skipg").click(function () {
         $('#skip-grams').val($(this).children('input').prop('value'));
         $(".skipg").removeClass("active");
         $(this).addClass("active");
         return false; //Prevent default action.
     });
 
-    $("#config-button").click(function() {
+    $("#config-button").click(function () {
         calculateSearchNodes();
         fillGraph();
         if (searchNodes.length > maxNodes * 3) {
@@ -103,23 +113,23 @@ $(document).ready(function() {
         $("#config-dialog").dialog("open");
     });
 
-    $("#config-close").click(function() {
+    $("#config-close").click(function () {
         $("#config-dialog").dialog("close");
     });
 
-    $(".lang-selector").click(function() {
+    $(".lang-selector").click(function () {
         $("#lang-icon").attr("src", $(this).attr("data-img"));
         $("#lang-icon").attr("data-value", $(this).attr("data-value"));
     });
 
-    $(document).on("click", ".addDistance", function() {
+    $(document).on("click", ".addDistance", function () {
         var distanceValue = parseInt($("#word-distance").html());
         $("#word-distance").html(distanceValue + 1);
         searchNodes[currentTargetNode].distance = distanceValue + 1;
         fillGraph();
     });
 
-    $(document).on("click", ".subDistance", function() {
+    $(document).on("click", ".subDistance", function () {
         var distanceValue = parseInt($("#word-distance").html()) - 1;
         if (distanceValue > -1) {
             $("#word-distance").html(distanceValue);
@@ -128,7 +138,7 @@ $(document).ready(function() {
         fillGraph();
     });
 
-    $(document).on("click", ".displayable-term", function() {
+    $(document).on("click", ".displayable-term", function () {
         $(".displayable-term-main").removeClass("displayable-term-main");
         $(this).addClass("displayable-term-main");
         var wordID = $(this).attr("id");
@@ -143,7 +153,7 @@ $(document).ready(function() {
         fillGraph();
     });
 
-    $(document).on("click", ".arrowsandboxes-node", function() {
+    $(document).on("click", ".arrowsandboxes-node", function () {
         var arrows = $(".arrowsandboxes-node");
         var labels = $(".arrowsandboxes-label");
 
@@ -178,7 +188,7 @@ function search(page, letter, subsearch) {
     }
     var discourses = [];
     var sorted;
-    $("input[name='discourses-selection']:checked").each(function() {
+    $("input[name='discourses-selection']:checked").each(function () {
         discourses.push($(this).val());
     });
 
@@ -213,7 +223,7 @@ function search(page, letter, subsearch) {
         },
 //        contentType: "application/json; charset=ISO-8859-1",
         data: JSON.stringify(data),
-        success: function(searchresult) {
+        success: function (searchresult) {
             console.log(searchresult.length);
             lastSearch = {
                 text: $("#search").val()
@@ -264,7 +274,7 @@ function search(page, letter, subsearch) {
                 getPaginator(parseInt(page), numPages, letter, $("#search").val(), sorted);
             }
         },
-        error: function(XMLHttpRequest, textStatus, errorThrown) {
+        error: function (XMLHttpRequest, textStatus, errorThrown) {
             if (XMLHttpRequest.status === 401) {
                 window.location.href = "login.jsp";
             }

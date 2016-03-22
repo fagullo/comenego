@@ -210,6 +210,29 @@
         </div>
 
         <div class="modal" id="ajax-load"></div>
+        <div id="Test">Estatutos Sociales</div>
+        <table style="width:100%">
+            <tr id="tr1">
+                <td style="text-align: right;" width="45%" class="td1">El artículo 25 de los</td>
+                <td style="text-align: center; color: red;" width="10%" class="td2">Estatutos Sociales</td> 
+                <td style="text-align: left;" width="45%" class="td3">regula la retribución de los consejeros:</td>
+            </tr>
+            <tr >
+                <td style="text-align: right;" width="45%" class="td1">lificado es parte separable del folleto completo, que contiene los</td>
+                <td style="text-align: center; color: red;" width="10%" class="td2">Estatutos</td> 
+                <td style="text-align: left;" width="45%" class="td3"> del folleto completo, que contiene los</td>
+            </tr>
+            <tr>
+                <td style="text-align: right;" width="45%" class="td1">Según el artículo 26 de los</td>
+                <td style="text-align: center; color: red;" width="10%" class="td2">estatutos sociales</td> 
+                <td style="text-align: left;" width="45%" class="td3">, el Consejo de Administración estará compuesto TEC</td>
+            </tr>
+            <tr>
+                <td style="text-align: right;" width="45%" class="td1">Según el artículo 22 de los</td>
+                <td style="text-align: center; color: red;" width="10%" class="td2">estatutos sociales</td> 
+                <td style="text-align: left;" width="45%" class="td3">, las Juntas Generales de Accionistas de la</td>
+            </tr>
+        </table>
         <footer class="col-md-8 col-md-offset-2">
             <div class="col-md-12">
                 <img src="media/img/logo_generalitat.gif">

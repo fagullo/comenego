@@ -232,3 +232,13 @@ body.loading #ajax-load {
 .no-padding {
     padding: 0 !important;
 }
+
+
+#Test
+{
+    position: absolute;
+    visibility: hidden;
+    height: auto;
+    width: auto;
+    white-space: nowrap; /* Thanks to Herb Caudill comment */
+}
