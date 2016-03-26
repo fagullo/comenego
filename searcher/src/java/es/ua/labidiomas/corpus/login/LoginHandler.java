@@ -51,7 +51,7 @@ public class LoginHandler {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response login(LoginParameters parameters, @Context HttpServletRequest request, @Context HttpServletResponse response) throws ClassNotFoundException, SQLException, URISyntaxException, LoginException {
 
-        HttpSession session = request.getSession(false);
+        HttpSession session = request.getSession();
         Class.forName("com.mysql.jdbc.Driver");
         Connection connection = null;
         try {
@@ -86,5 +86,19 @@ public class LoginHandler {
             session.removeAttribute("userID");
         }
         return Response.temporaryRedirect(new URI("/searcher")).build();
+    }
+    
+    @GET
+    @Path("isLoged")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response isLoged(@Context HttpServletRequest request, @Context HttpServletResponse response) throws ClassNotFoundException, SQLException, URISyntaxException, LoginException {
+
+        HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+        HttpSession session = httpServletRequest.getSession();
+
+        if (session.getAttribute("userID") != null) {
+            return Response.status(200).entity(true).build();
+        }
+        return Response.status(200).entity(false).build();
     }
 }

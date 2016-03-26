@@ -1,24 +1,34 @@
-function loginController($scope, $http, $location, atomicNotifyService) {
+function loginController($http, $location, atomicNotifyService, sharedService) {
 
-    $scope.loginData = {
-        user: "",
+    var self = this;
+
+    self.model = {
+        name: "",
         password: ""
     };
 
-    $scope.submit = function () {
-        $http.post("/lsrecomendation/services/login/login", JSON.stringify($scope.loginData)).then($scope.loginSuccess, $scope.loginError);
+    self.submit = function() {
+        var request = {
+            method: 'POST',
+            url: '/searcher/services/login/login',
+            headers: {
+                'Content-Type': "application/json; charset=ISO-8859-1"
+            },
+            data: JSON.stringify(self.model)
+        };
+        $http(request).then(self.loginSuccess, self.loginError);
     };
 
-    $scope.loginSuccess = function (data, status) {
-        $location.path("recomendation");
-//        window.location.replace("/lsrecomendation/recomendation.html");
+    self.loginSuccess = function(data, status) {
+        sharedService.login();
+        $location.path("search");
     };
 
-    $scope.loginError = function (error) {
-        var msg = error.status + " " + error.statusText + ": " + error.data;
+    self.loginError = function(error) {
+        var msg = "Nombre de usuario o contraseña incorrectos";
         atomicNotifyService.error(msg, 5000);
     };
 }
 
 angular.module('comenego').controller('LoginController', loginController);
-loginController.$inject = ['$scope', '$http', '$location', 'atomicNotifyService'];
+loginController.$inject = ['$http', '$location', 'atomicNotifyService', 'broadcastService'];

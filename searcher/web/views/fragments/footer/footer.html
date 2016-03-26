@@ -1,0 +1,17 @@
+<footer class="col-md-8 col-md-offset-2" ng-controller="FooterController as footer">
+    <div class="col-md-12">
+        <img src="media/img/logo_generalitat.gif">
+        <img src="media/img/logo_ua.gif">
+    </div>
+    2014 - 
+    <a href="http://dti.ua.es/comenego">Comenego</a> - 
+    <a href="http://www.ua.es">Universidad de Alicante</a> - 
+    <a href="/comenego/text/list">Admin</a>
+    <br/>
+    <div id="lang_selector" class="lang_selector">
+        <div class="btn-group" role="group" aria-label="...">
+            <button type="button" ng:class="{true:'btn btn-danger', false:'btn btn-default'}[footer.model.language == 'es']" ng-click="footer.changeLanguage('es')">Español</button>
+            <button type="button" ng:class="{true:'btn btn-danger', false:'btn btn-default'}[footer.model.language == 'en']" ng-click="footer.changeLanguage('en')">English</button>
+        </div>
+    </div>
+</footer>

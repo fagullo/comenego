@@ -5,7 +5,8 @@
 var comenego = angular.module('comenego', [
     'ngRoute',
     'atomic-notify',
-    'pascalprecht.translate'
+    'pascalprecht.translate',
+    'ngTagsInput'
 ]);
 
 comenego.config(['atomicNotifyProvider', function (atomicNotifyProvider) {
@@ -26,6 +27,28 @@ comenego.config(['$routeProvider', function ($routeProvider) {
         });
     }
 ]);
+
+comenego.factory('broadcastService', function ($rootScope) {
+    var sharedService = {};
+
+    sharedService.message = '';
+
+    sharedService.login = function () {
+        this.broadcastItem("login");
+    };
+    
+    sharedService.login = function (msg) {
+        sharedService.message = msg;
+        this.broadcastItem("languageChanged");
+    };
+
+    sharedService.broadcastItem = function (event) {
+        $rootScope.$broadcast(event);
+    };
+
+    return sharedService;
+});
+
 
 comenego.config(function ($translateProvider) {
     $translateProvider.translations('en', {
