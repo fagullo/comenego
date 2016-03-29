@@ -6,7 +6,9 @@ var comenego = angular.module('comenego', [
     'ngRoute',
     'atomic-notify',
     'pascalprecht.translate',
-    'ngTagsInput'
+    'ngTagsInput',
+    'uiSwitch',
+    'ngSanitize'
 ]);
 
 comenego.config(['atomicNotifyProvider', function (atomicNotifyProvider) {
@@ -126,5 +128,6 @@ comenego.config(function ($translateProvider) {
         LOGIN_SIGIN: 'Confirmar'
     });
     $translateProvider.preferredLanguage('es');
+    $translateProvider.useSanitizeValueStrategy('escapeParameters');
 });
 

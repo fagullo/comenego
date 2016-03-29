@@ -3,23 +3,23 @@
         <div class="panel-heading" translate="SEARCH_CONFIGURATION"></div>
         <div class="panel-body">
             <div class="col-md-12" id="form-wrapper" style="float:left;">
-                <form action="javascript:search()" method="POST" class="form-inline col-md-8 col-md-offset-2" role="form">
+                <form ng-submit="search.search()" method="POST" class="form-inline col-md-8 col-md-offset-2" role="form">
                     <div class="input-group col-md-12">
                         <div class="input-group-btn">
                             <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <img src="media/img/Spain-32.png" height="18" data-value="es" id="lang-icon"/>&nbsp;&nbsp;<span class="caret"></span></button>
+                                <img ng-src="{{search.model.lang.selected.img}}" height="18"/>&nbsp;&nbsp;<span class="caret"></span></button>
                             <ul class="dropdown-menu">
-                                <li><a href="#" class="lang-selector" data-img="media/img/Spain-32.png" data-value="es">Castellano</a></li>
-                                <li><a href="#" class="lang-selector" data-img="media/img/United-Kingdom-32.png" data-value="en">English</a></li>
-                                <li><a href="#" class="lang-selector" data-img="media/img/France-32.png" data-value="fr">Français</a></li>
+                                <li ng-repeat="lang in search.model.lang.available">
+                                    <a class="lang-selector" ng-click="search.changeLanguage($index)">{{lang.name}}</a>
+                                </li>
                             </ul>
                         </div><!-- /btn-group -->
-                        <input type="text" name="search" class="form-control" id="search" placeholder="{{ 'SEARCH_TEXT' | translate }}">
+                        <input type="text" ng-model="search.model.search.text" class="form-control" placeholder="{{ 'SEARCH_TEXT' | translate }}">
                         <span class="input-group-btn">
                             <button type="button" class="btn btn-info" aria-label="Config" id="config-button">
                                 <i class="glyphicon glyphicon-eye-open" aria-hidden="true"></i>
                             </button>
-                            <button class="btn btn-primary" id="create" type="submit" translate="SEARCH"></button>
+                            <button class="btn btn-primary" type="submit" translate="SEARCH"></button>
                         </span>
                     </div>
                 </form>
@@ -27,48 +27,28 @@
             <div class="col-md-8">
                 <div class="col-md-12 discourse-wrapper">
                     <div class="title col-md-12"><h1 translate="DISCOURSES">:</h1></div>
-                    <!--<span id="tags-input" class="selectivity-input col-md-12"></span>-->
-                    <tags-input ng-model="search.tags" placeholder="." on-tag-adding="search.addTag($tag)">
-                         <auto-complete source="search.tags"></auto-complete>
+                    <tags-input ng-model="search.model.discourses" add-from-autocomplete-only="true" placeholder=".">
+                        <auto-complete source="search.tags"></auto-complete>
                     </tags-input>
                 </div>
                 <div class="col-md-12" style="float: left; margin-top: 20px; padding-left: 0px !important;">
                     <div class="col-md-6 discourse-wrapper" style="padding-left: 0px !important;">
                         <div class="title col-md-12" style="margin-top: -5px;"><h1 translate="ORDEN">:</h1></div>
-                        <div class="btn-group col-md-12" data-toggle="buttons">
-                            <label class="btn btn-primary active order">
-                                <input type="radio" value="">
-                                {{ 'ORDEN_PRIORIDAD' | translate }}
-                            </label>
-                            <label class="btn btn-primary order">
-                                <input type="radio" value="before" >
-                                {{ 'ORDEN_ANTERIOR' | translate }}
-                            </label>
-                            <label class="btn btn-primary order">
-                                <input type="radio" value="after">
-                                {{ 'ORDEN_SIGUIENTE' | translate }}
-                            </label>
+
+                        <div class="btn-group" role="group">
+                            <button type="button" ng:class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.field === 'relevance']" ng-click="search.changeOrderField('relevance')">{{ 'ORDEN_PRIORIDAD' | translate }}</button>
+                            <button type="button" ng:class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.field === 'before']" ng-click="search.changeOrderField('before')">{{ 'ORDEN_ANTERIOR' | translate }}</button>
+                            <button type="button" ng:class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.field === 'after']" ng-click="search.changeOrderField('after')">{{ 'ORDEN_SIGUIENTE' | translate }}</button>
                         </div>
                     </div>
-                    <!--<div class="col-md-6 discourse-wrapper" id="skip-grams-container">-->
-                    <div class="col-md-6 discourse-wrapper" id="skip-grams-container" style="display: none;">
+                    <div class="col-md-6 discourse-wrapper" ng-hide="search.model.order.field == 'relevance'">
                         <div class="title col-md-12" style="margin-top: -5px;"><h1 translate="ORDEN_SKIP">: </h1></div>
-                        <div class="btn-group col-md-12" data-toggle="buttons">
-                            <label class="btn btn-primary active skipg">
-                                <input type="radio" value="1">1
-                            </label>
-                            <label class="btn btn-primary skipg">
-                                <input type="radio" value="2" >2
-                            </label>
-                            <label class="btn btn-primary skipg">
-                                <input type="radio" value="3">3
-                            </label>
-                            <label class="btn btn-primary skipg">
-                                <input type="radio" value="4">4
-                            </label>
+                        <div class="btn-group" role="group">
+                            <button type="button" ng:class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.skip === 1]" ng-click="search.changeOrderSkip(1)">1</button>
+                            <button type="button" ng:class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.skip === 2]" ng-click="search.changeOrderSkip(2)">2</button>
+                            <button type="button" ng:class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.skip === 3]" ng-click="search.changeOrderSkip(3)">3</button>
+                            <button type="button" ng:class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.skip === 4]" ng-click="search.changeOrderSkip(4)">4</button>
                         </div>
-                        <input type="hidden" value="" name="search-sort" id="search-sort"/>
-                        <input type="hidden" value="1" name="skip-grams" id="skip-grams"/>
                     </div>
                 </div>
             </div>
@@ -76,42 +56,47 @@
                 <div id="lemmatizer-container" class="col-md-12 switch-container">
                     <div class="title col-md-4"><h1 translate="SEARCH_LEMMATIZE"></h1></div>
                     <div class="col-md-6">
-                        <input class="switch-button" type="checkbox" name="lemmatizer-input" id="lemmatizer-input">
+                        <form>
+                            <switch ng-model="search.model.switch.lemmatize" on="{{ 'YES' | translate }}" off="{{ 'NO' | translate }}" class="green"></switch>
+                        </form>
                     </div>
                     <div class="col-md-1 switch-info" title="Enable the switch means that terms must appears exactly as they are typed in the search bar. When the switch is disabled the terms could match only in the root."><i class="glyphicon glyphicon-info-sign"></i></div>
-                    <input type="hidden" value="false" name="lemmatizer" id="lemmatizer"/>
                 </div>
                 <div id="title-container" class="col-md-12 switch-container">
                     <div class="title col-md-4"><h1 translate="SEARCH_TITLE"></h1></div>
                     <div class="col-md-6">
-                        <input class="switch-button" type="checkbox" name="title-input" id="title-input">
+                        <form>
+                            <switch ng-model="search.model.switch.title" on="{{ 'YES' | translate }}" off="{{ 'NO' | translate }}" class="green"></switch>
+                        </form>
                     </div>
                     <div class="col-md-1 switch-info" title="Enable the switch means that terms must appears only in the title of the text."><i class="glyphicon glyphicon-info-sign"></i></div>
-                    <input type="hidden" value="false" name="title-filter" id="title-filter"/>
                 </div>
                 <div id="order-container" class="col-md-12 switch-container">
                     <div class="title col-md-4"><h1 translate="SEARCH_ORDERED"></h1></div>
                     <div class="col-md-6">
-                        <input class="switch-button" type="checkbox" name="order-input" id="order-input">
+                        <form>
+                            <switch ng-model="search.model.switch.order" on="{{ 'YES' | translate }}" off="{{ 'NO' | translate }}" class="green"></switch>
+                        </form>
                     </div>
                     <div class="col-md-1 switch-info" title="Enable the switch means that the terms typed in the search bar must appear in the text with the same order that they appear in the bar. When the switch is disabled the order of the terms does not matters."><i class="glyphicon glyphicon-info-sign"></i></div>
-                    <input type="hidden" value="false" name="order-filter" id="order-filter"/>
                 </div>
                 <div id="bilingue-container" class="col-md-12 switch-container">
                     <div class="title col-md-4"><h1 translate="BILINGUAL_SEARCH"></h1></div>
                     <div class="col-md-6">
-                        <input class="switch-button" type="checkbox" name="bilingue-input" id="bilingue-input">
+                        <form>
+                            <switch ng-model="search.model.switch.bilingual" on="{{ 'YES' | translate }}" off="{{ 'NO' | translate }}" class="green"></switch>
+                        </form>
                     </div>
                     <div class="col-md-1 switch-info" title="Enable the switch means that the search is only for text with translation in at least the two languages selected."><i class="glyphicon glyphicon-info-sign"></i></div>
-                    <input type="hidden" value="false" name="bilingue-filter" id="bilingue-filter"/>
                 </div>
                 <div id="distance-container" class="col-md-12 switch-container">
                     <div class="title col-md-4"><h1 translate="SEARCH_DISTANCE"></h1></div>
                     <div class="col-md-6">
-                        <input class="switch-button" type="checkbox" name="distance-input" id="distance-input">
+                        <form>
+                            <switch ng-model="search.model.switch.distance" on="{{ 'YES' | translate }}" off="{{ 'NO' | translate }}" class="green"></switch>
+                        </form>
                     </div>
                     <div class="col-md-1 switch-info" title="Enable the switch means that the distance between terms must be exactly the specified. When the switch is disabled the terms could appear in any of the 'n' next positions from the term before."><i class="glyphicon glyphicon-info-sign"></i></div>
-                    <input type="hidden" value="false" name="distance-filter" id="distance-filter"/>
                 </div>
             </div>
         </div>
@@ -135,58 +120,33 @@
 </div>
 
 <div class="modal" id="ajax-load"></div>
-<div id="Test">Estatutos Sociales</div>
-<table style="width:100%">
-    <tr id="tr1">
-        <td style="text-align: right;" width="45%" class="td1">El artículo 25 de los</td>
-        <td style="text-align: center; color: red;" width="10%" class="td2">Estatutos Sociales</td> 
-        <td style="text-align: left;" width="45%" class="td3">regula la retribución de los consejeros:</td>
-    </tr>
-    <tr >
-        <td style="text-align: right;" width="45%" class="td1">lificado es parte separable del folleto completo, que contiene los</td>
-        <td style="text-align: center; color: red;" width="10%" class="td2">Estatutos</td> 
-        <td style="text-align: left;" width="45%" class="td3"> del folleto completo, que contiene los</td>
-    </tr>
-    <tr>
-        <td style="text-align: right;" width="45%" class="td1">Según el artículo 26 de los</td>
-        <td style="text-align: center; color: red;" width="10%" class="td2">estatutos sociales</td> 
-        <td style="text-align: left;" width="45%" class="td3">, el Consejo de Administración estará compuesto TEC</td>
-    </tr>
-    <tr>
-        <td style="text-align: right;" width="45%" class="td1">Según el artículo 22 de los</td>
-        <td style="text-align: center; color: red;" width="10%" class="td2">estatutos sociales</td> 
-        <td style="text-align: left;" width="45%" class="td3">, las Juntas Generales de Accionistas de la</td>
+<div id="test-text">{{search.model.search.text}}</div>
+<table style="width:100%" id="result-wrapper">
+    <tr ng-repeat="result in search.model.result.matches">
+        <td style="text-align: right;" width="{{search.model.result.config.side}}">{{result.previous}}</td>
+        <td style="text-align: center; color: blue;" width="{{search.model.result.config.center}}">{{result.target}}</td> 
+        <td style="text-align: left;" width="{{search.model.result.config.side}}">{{result.next}}</td>
     </tr>
 </table>
 
 <script>
-            $("#lemmatizer-input, #title-input, #bilingue-input").switchButton({
-                on_label: 'YES',
-                off_label: 'NO'
-            });
-            $("#order-input, #distance-input").switchButton({
-                on_label: 'YES',
-                off_label: 'NO',
-                checked: true
-            });
-
-            $("#config-dialog").dialog({
-                autoOpen: false,
-                modal: true,
-                title: "Configure Search Criteria",
-                width: 1200,
-                height: 400,
-                minWidth: 1000,
-                show: {
-                    effect: "clip",
-                    duration: 1000
-                },
-                hide: {
-                    effect: "clip",
-                    duration: 1000
-                }
-            });
-            $(function() {
-                $(document).tooltip();
-            });
+        $("#config-dialog").dialog({
+            autoOpen: false,
+            modal: true,
+            title: "Configure Search Criteria",
+            width: 1200,
+            height: 400,
+            minWidth: 1000,
+            show: {
+                effect: "clip",
+                duration: 1000
+            },
+            hide: {
+                effect: "clip",
+                duration: 1000
+            }
+        });
+        $(function() {
+            $(document).tooltip();
+        });
 </script>
