@@ -5,10 +5,10 @@
  */
 package es.ua.labidiomas.corpus.searcher;
 
-import es.ua.labidiomas.corpus.searcher.search.SearchParameters;
-import es.ua.labidiomas.corpus.searcher.search.SearchConfiguration;
 import es.ua.labidiomas.corpus.index.AnalyzerFactory;
+import es.ua.labidiomas.corpus.searcher.search.SearchConfiguration;
 import es.ua.labidiomas.corpus.searcher.search.SearchNode;
+import es.ua.labidiomas.corpus.searcher.search.SearchParameters;
 import es.ua.labidiomas.corpus.util.Config;
 import java.io.File;
 import java.io.IOException;
@@ -46,6 +46,7 @@ import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleFragmenter;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
+import org.apache.lucene.search.highlight.SimpleSpanFragmenter;
 import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -247,11 +248,17 @@ public class Searcher {
      * @param searchQuery the query that contains the search criteria.
      * @return the highlighter configured.
      */
-    public Highlighter prepareHighlighter(BooleanQuery searchQuery) {
-        QueryScorer scorer = new QueryScorer(searchQuery.getClauses()[0].getQuery());
+    public Highlighter prepareHighlighter(Analyzer analyzer, SearchConfiguration params) {
+        Query query;
+        if (params.getOptions().isTitle()) {
+            query = _prepareQuery(params.getSearchNodes(), "title", params.getOptions().isOrder(), params.getOptions().isDistance());
+        } else {
+            query = _prepareQuery(params.getSearchNodes(), "text", params.getOptions().isOrder(), params.getOptions().isDistance());
+        }
+        QueryScorer scorer = new QueryScorer(query);
         SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
         Highlighter textHighlighter = new Highlighter(formatter, scorer);
-        textHighlighter.setTextFragmenter(new SimpleFragmenter(100));
+        textHighlighter.setTextFragmenter(new SimpleSpanFragmenter(scorer, 600));
 
         return textHighlighter;
     }
@@ -329,17 +336,21 @@ public class Searcher {
 
     private SpanQuery _prepareQuery(List<SearchNode> searchNodes, String field, boolean order, boolean precise) {
         SpanQuery[] clauses = new SpanQuery[]{
-            new SpanTermQuery(new Term(field, searchNodes.get(0).getWord()))
+            new SpanTermQuery(new Term(field, searchNodes.get(0).getWord().toLowerCase()))
         };
-        SpanNearQuery query = new SpanNearQuery(clauses, 0, true);
+        SpanQuery query = new SpanNearQuery(clauses, 0, true);
         for (int i = 1; i < searchNodes.size(); i++) {
             SearchNode node = searchNodes.get(i);
             SearchNode prevNode = searchNodes.get(i - 1);
             clauses = new SpanQuery[]{
                 query,
-                new SpanTermQuery(new Term(field, node.getWord()))
+                new SpanTermQuery(new Term(field, node.getWord().toLowerCase()))
             };
             query = new SpanNearQuery(clauses, prevNode.getDistance(), order);
+            if (precise && prevNode.getDistance() > 0) {
+                SpanNearQuery spanNearQuery = new SpanNearQuery(clauses, prevNode.getDistance() - 1, order);
+                query = new SpanNotQuery(query, spanNearQuery);
+            }
         }
 
         return query;

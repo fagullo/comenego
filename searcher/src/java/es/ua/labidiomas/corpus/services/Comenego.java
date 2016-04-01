@@ -80,7 +80,7 @@ public class Comenego {
                 Analyzer analyzer = searcher.getAnalyzer(parameters.getLanguage(), parameters.getOptions().isLematize());
                 IndexSearcher indexSearcher = searcher.prepareIndexSearcher(parameters.getLanguage(), parameters.getSearch(), parameters.getOptions().isLematize(), parameters.getOptions().isTitle());
                 BooleanQuery searchQuery = searcher.prepareQuery(analyzer, parameters);
-                Highlighter textHighlighter = searcher.prepareHighlighter(searchQuery);
+                Highlighter textHighlighter = searcher.prepareHighlighter(analyzer, parameters);
 
                 TopGroups tg;
                 tg = searcher.prapareResults(searchQuery, indexSearcher, parameters.getPage());

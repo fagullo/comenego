@@ -223,3 +223,7 @@ body.loading #ajax-load {
 #config-content {
     width: 1200px;
 }
+
+#result-wrapper>div>div>i {
+    color : red;
+}

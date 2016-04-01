@@ -1,4 +1,4 @@
-function searchController($rootScope, $http, $location, atomicNotifyService, $filter) {
+function searchController($rootScope, $http, $sce, atomicNotifyService, $filter) {
 
     var self = this;
     self.nodeClick = function() {
@@ -43,7 +43,6 @@ function searchController($rootScope, $http, $location, atomicNotifyService, $fi
     self.setAsMain = function($event) {
         var wordID = $($event.currentTarget).attr("id");
         var wordIndex = parseInt(wordID.substring(wordID.indexOf("-") + 1));
-        console.log(wordIndex);
         for (var i = 0; i < self.model.nodes.length; i++) {
             if (wordIndex === i) {
                 self.model.nodes[i].isMain = true;
@@ -69,6 +68,7 @@ function searchController($rootScope, $http, $location, atomicNotifyService, $fi
     ];
 
     self.config = {};
+    self.config.lastSearch = {};
     self.config.graph = {};
     self.config.graph.word1 = "word1";
     self.config.graph.word1ID = "1";
@@ -120,17 +120,53 @@ function searchController($rootScope, $http, $location, atomicNotifyService, $fi
         {text: $filter('translate')('DISCOURSES_TECHNICAL'), code: 'TEC'}
     ];
     self.model.order = {};
-    self.model.order.field = 'relevance';
+    self.model.order.field = null;
     self.model.order.skip = 1;
+    self.model.order.letter = null;
 
     self.model.result = {};
+    self.model.result.pager = {};
+    self.model.result.pager.letters = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'];
+    self.model.result.pager.currentPage = 1;
+    self.model.result.pager.numPages = 1;
+    self.model.result.pager.maxSize = 10;
     self.model.result.config = {};
-    self.model.result.config.center = '10%';
-    self.model.result.config.side = '45%';
+    self.model.result.config.center = {
+        "text-align": "center",
+        "color": "blue",
+        "float": "left"
+    };
+    self.model.result.config.before = {
+        "text-align": "right",
+        "float": "left",
+        "height": "20px",
+        "overflow": "hidden",
+        "direction": "rtl"
+    };
+    self.model.result.config.after = {
+        "text-align": "left",
+        "float": "left",
+        "overflow": "hidden",
+        "height": "20px"
+    };
+    self.model.result.config.discourses = {
+        "text-align": "center",
+        "float": "left",
+        "height": "20px"
+    };
 
     self.model.result.matches = [];
     self.model.result.numMatches = -1;
     self.model.result.showNumMatches = false;
+
+    self.setPage = function(pageNo) {
+        self.model.result.pager.currentPage = pageNo;
+    };
+
+    self.pageChanged = function() {
+        self.config.lastSearch.page = self.model.result.pager.currentPage;
+        self.search(self.config.lastSearch);
+    };
 
     self.changeOrderField = function(order) {
         self.model.order.field = order;
@@ -147,10 +183,18 @@ function searchController($rootScope, $http, $location, atomicNotifyService, $fi
 
     self.calculateTextSize = function(textWidth) {
         var rowWidth = $("#result-wrapper").css("width");
-        rowWidth = rowWidth.substring(0, rowWidth.length - 2);
+        rowWidth = parseInt(rowWidth.substring(0, rowWidth.length - 2));
         var total = (rowWidth - textWidth) / 2;
-        self.model.result.config.center = textWidth + "px";
-        self.model.result.config.side = total + "px";
+        self.model.result.config.center.width = textWidth + "px";
+        self.model.result.config.before.width = total + "px";
+        self.model.result.config.before["min-width"] = total + "px";
+        self.model.result.config.before["max-width"] = total + "px";
+        self.model.result.config.after.width = (total * 0.75) + "px";
+        self.model.result.config.after["min-width"] = (total * 0.75) + "px";
+        self.model.result.config.after["max-width"] = (total * 0.75) + "px";
+        self.model.result.config.discourses.width = (total * 0.2) + "px";
+        self.model.result.config.discourses["min-width"] = (total * 0.2) + "px";
+        self.model.result.config.discourses["max-width"] = (total * 0.2) + "px";
     };
 
     self.getDiscourses = function() {
@@ -255,13 +299,39 @@ function searchController($rootScope, $http, $location, atomicNotifyService, $fi
         $("#arrows-container").append("<pre id='arrows' class='arrows-and-boxes'>" + content + "</pre>");
         $("#arrows").arrows_and_boxes();
     };
+    
+    self.searchLetter = function($event) {
+        self.model.order.letter = $($event.currentTarget).children('a').html();
+        self.config.lastSearch.sort.letter = self.model.order.letter;
+        self.search(self.config.lastSearch);
+    };
 
-    self.search = function() {
+    self.search = function(searchData) {
+        if (!searchData) {
+            self.config.lastSearch = self.obtainSearchData();
+        }
+
+        var request = {
+            method: 'POST',
+            url: '/searcher/services/comenego/search',
+            headers: {
+                'Content-Type': "application/json; charset=utf-8"
+            },
+            data: JSON.stringify(self.config.lastSearch)
+        };
+        $http(request).then(self.searchSuccess, self.searchError);
+        $("#pleaseWaitDialog").modal();
+        $("body").addClass("loading");
+    };
+
+    self.obtainSearchData = function() {
+        self.model.order.letter = null;
+        self.model.result.pager.currentPage = 1;
         var data = {
             searchNodes: self.model.nodes,
             discourses: self.getDiscourses(),
             language: self.model.lang.selected.code,
-            page: 1,
+            page: self.model.result.pager.currentPage,
             options: {
                 lematize: self.model.switch.lemmatize,
                 title: self.model.switch.title,
@@ -270,26 +340,17 @@ function searchController($rootScope, $http, $location, atomicNotifyService, $fi
                 bilingual: self.model.switch.bilingual
             },
             sort: {
-                field: null,
-                position: 0,
-                letter: null
+                field: self.model.order.field,
+                position: self.model.order.skip,
+                letter: self.model.order.letter
             }
         };
 
-        var request = {
-            method: 'POST',
-            url: '/searcher/services/comenego/search',
-            headers: {
-                'Content-Type': "application/json; charset=utf-8"
-            },
-            data: JSON.stringify(data)
-        };
-        $http(request).then(self.searchSuccess, self.searchError);
+        return data;
     };
 
     self.searchSuccess = function(data, status) {
-        console.log(data.data);
-        console.log(data.data.numDocs);
+        $("body").removeClass("loading");
         var textWidth = 0;
         self.model.result.matches = [];
         for (var i = 0; i < data.data.matches.length; i++) {
@@ -299,9 +360,9 @@ function searchController($rootScope, $http, $location, atomicNotifyService, $fi
             var target = hit.snippet.substring(p1 + 3, p2);
             var next = hit.snippet.substring(p2 + 4);
             self.model.result.matches.push({
-                previous: previous,
+                previous: $sce.trustAsHtml(previous.replace(/(\r\n|\n|\r)/gm, "")),
                 target: target,
-                next: next,
+                next: $sce.trustAsHtml(next),
                 discourses: hit.discourses,
                 link: hit.url
             });
@@ -311,16 +372,22 @@ function searchController($rootScope, $http, $location, atomicNotifyService, $fi
                 textWidth = newSize;
             }
         }
-        self.model.result.numMatches = data.data.numDocs;
+        self.model.result.numMatches = data.data.numDocs ? data.data.numDocs : 0;
         self.model.result.showNumMatches = true;
+        self.model.result.pager.numPages = data.data.numPages;
         self.calculateTextSize(textWidth + 8);
     };
 
+    self.showPager = function() {
+        return self.model.result.pager.numPages > 1;
+    };
+
     self.searchError = function(error) {
+        $("body").removeClass("loading");
         console.log(error);
     };
 
 }
 
 angular.module('comenego').controller('SearchController', searchController);
-searchController.$inject = ['$rootScope', '$http', '$location', 'atomicNotifyService', '$filter'];
+searchController.$inject = ['$rootScope', '$http', '$sce', 'atomicNotifyService', '$filter'];

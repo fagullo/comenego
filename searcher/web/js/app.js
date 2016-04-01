@@ -8,7 +8,8 @@ var comenego = angular.module('comenego', [
     'pascalprecht.translate',
     'ngTagsInput',
     'uiSwitch',
-    'ngSanitize'
+    'ngSanitize',
+    'ui.bootstrap'
 ]);
 
 comenego.config(['atomicNotifyProvider', function (atomicNotifyProvider) {
@@ -57,8 +58,11 @@ comenego.config(function ($translateProvider) {
         NO: 'No',
         MONOLINGUAL_SEARCH: 'Monolingual search',
         BILINGUAL_SEARCH: 'Bilingual search',
+        BILINGUAL_SEARCH_HELP: 'Enable to activate bilingual mode.',
         SEARCH_LEMMATIZE: 'Lemmatize',
+        SEARCH_LEMMATIZE_HELP: 'Enable to search terms that could match only in the root. Disable to look for terms that must appear exactly as they are typed in the search bar',
         SEARCH_TITLE: 'Title only',
+        SEARCH_TITLE_HELP: 'Enable to search only in the titles of the text.',
         LANGUAGES: 'Languages',
         SEARCH: 'Search',
         SEARCH_SUBSEARCH: 'SubSearch',
@@ -66,7 +70,9 @@ comenego.config(function ($translateProvider) {
         SEARCH_TEXT: 'Search text...',
         SEARCH_CONFIGURATION: 'Search criteria',
         SEARCH_ORDERED: 'Appear in order',
+        SEARCH_ORDERED_HELP: 'Enable when each clause must appear in the results ordered as in search bar.',
         SEARCH_DISTANCE: 'Precise distance',
+        SEARCH_DISTANCE_HELP: 'Enable to search with the distance between terms exactly as specified. Disable to find terms that could appear in any of the n next positions from the term before.',
         DISCOURSES: 'Discourses',
         DISCOURSES_SCIENTIFIC: 'Scientific',
         DISCOURSES_COMERCIAL: 'Commercial',
@@ -83,7 +89,11 @@ comenego.config(function ($translateProvider) {
         LOGIN_SIGIN_MSG: 'Please sign in',
         LOGIN_USER: 'User name',
         LOGIN_PASSWORD: 'Password',
-        LOGIN_SIGIN: 'LogIn'
+        LOGIN_SIGIN: 'LogIn',
+        NEXT : 'Next',
+        PREVIOUS : 'Previous',
+        LAST : 'Last',
+        FIRST : 'First'
     });
     $translateProvider.translations('es', {
         INDEX_TITLE: 'COMENEGO',
@@ -94,8 +104,11 @@ comenego.config(function ($translateProvider) {
         NO: 'No',
         MONOLINGUAL_SEARCH: 'Búsqueda monolingüe',
         BILINGUAL_SEARCH: 'Búsqueda bilingüe',
+        BILINGUAL_SEARCH_HELP: 'Activar para buscar en modo bilingüe.',
         SEARCH_LEMMATIZE: 'Lematizar',
+        SEARCH_LEMMATIZE_HELP: 'Para hacer una búsqueda exacta desactivar lematización. Para realizar una búsqueda por lema activar.',
         SEARCH_TITLE: 'Sólo título',
+        SEARCH_TITLE_HELP: 'Activar para buscar sólo en los títulos de los textos.',
         LANGUAGES: 'Idiomas',
         SEARCH: 'Buscar',
         SEARCH_SUBSEARCH: 'SubBúsqueda',
@@ -103,7 +116,9 @@ comenego.config(function ($translateProvider) {
         SEARCH_TEXT: 'Búsqueda',
         SEARCH_CONFIGURATION: 'Criterios de búsqueda',
         SEARCH_ORDERED: 'Aparecer en orden',
+        SEARCH_ORDERED_HELP: 'Activar cuando las palabras en los resultados tengan que aparecer en el mismo orden que en la barra de búsqueda.',
         SEARCH_DISTANCE: 'Distancia precisa',
+        SEARCH_DISTANCE_HELP: 'Activar para buscar términos con exáctamente la distancia especificada. Desactivar para encontrar términos en cualquiera de las n siguientes posiciones.',
         DISCOURSES: 'Discursos',
         DISCOURSES_SCIENTIFIC: 'Científico',
         DISCOURSES_COMERCIAL: 'Comercial',
@@ -120,7 +135,11 @@ comenego.config(function ($translateProvider) {
         LOGIN_SIGIN_MSG: 'Identificación',
         LOGIN_USER: 'Nombre de usuario',
         LOGIN_PASSWORD: 'Contraseña',
-        LOGIN_SIGIN: 'Confirmar'
+        LOGIN_SIGIN: 'Confirmar',
+        NEXT : 'Siguiente',
+        PREVIOUS : 'Anterior',
+        LAST : 'Último',
+        FIRST : 'Primero'
     });
     $translateProvider.preferredLanguage('es');
     $translateProvider.useSanitizeValueStrategy('escapeParameters');

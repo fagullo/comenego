@@ -16,12 +16,12 @@
                         </div><!-- /btn-group -->
                         <input type="text" ng-model="search.model.search.text" class="form-control" placeholder="{{ 'SEARCH_TEXT' | translate }}">
                         <span class="input-group-btn">
-<!--                            <button type="button" class="btn btn-info" aria-label="Config" id="config-button" data-target="#myModal">
-                                <i class="glyphicon glyphicon-eye-open" aria-hidden="true"></i>
-                            </button>-->
-<!--                            <button type="button" class="btn btn-info" data-toggle="modal" data-target="#config-dialog">
-                                <i class="glyphicon glyphicon-eye-open" aria-hidden="true"></i>
-                            </button>-->
+                            <!--                            <button type="button" class="btn btn-info" aria-label="Config" id="config-button" data-target="#myModal">
+                                                            <i class="glyphicon glyphicon-eye-open" aria-hidden="true"></i>
+                                                        </button>-->
+                            <!--                            <button type="button" class="btn btn-info" data-toggle="modal" data-target="#config-dialog">
+                                                            <i class="glyphicon glyphicon-eye-open" aria-hidden="true"></i>
+                                                        </button>-->
                             <button class="btn btn-primary" type="submit" translate="SEARCH"></button>
                         </span>
                     </div>
@@ -39,12 +39,12 @@
                         <div class="title col-md-12" style="margin-top: -5px;"><h1 translate="ORDEN">:</h1></div>
 
                         <div class="btn-group" role="group">
-                            <button type="button" ng-class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.field === 'relevance']" ng-click="search.changeOrderField('relevance')">{{ 'ORDEN_PRIORIDAD' | translate }}</button>
+                            <button type="button" ng-class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.field === null]" ng-click="search.changeOrderField(null)">{{ 'ORDEN_PRIORIDAD' | translate }}</button>
                             <button type="button" ng-class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.field === 'before']" ng-click="search.changeOrderField('before')">{{ 'ORDEN_ANTERIOR' | translate }}</button>
                             <button type="button" ng-class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.field === 'after']" ng-click="search.changeOrderField('after')">{{ 'ORDEN_SIGUIENTE' | translate }}</button>
                         </div>
                     </div>
-                    <div class="col-md-6 discourse-wrapper" ng-hide="search.model.order.field == 'relevance'">
+                    <div class="col-md-6 discourse-wrapper" ng-hide="search.model.order.field === null">
                         <div class="title col-md-12" style="margin-top: -5px;"><h1 translate="ORDEN_SKIP">: </h1></div>
                         <div class="btn-group" role="group">
                             <button type="button" ng-class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.skip === 1]" ng-click="search.changeOrderSkip(1)">1</button>
@@ -63,7 +63,7 @@
                             <switch ng-model="search.model.switch.lemmatize" on="{{ 'YES' | translate }}" off="{{ 'NO' | translate }}" class="green"></switch>
                         </form>
                     </div>
-                    <div class="col-md-1 switch-info" title="Enable the switch means that terms must appears exactly as they are typed in the search bar. When the switch is disabled the terms could match only in the root."><i class="glyphicon glyphicon-info-sign"></i></div>
+                    <div class="col-md-1 switch-info" title="{{ 'SEARCH_LEMMATIZE_HELP' | translate }}"><i class="glyphicon glyphicon-info-sign"></i></div>
                 </div>
                 <div id="title-container" class="col-md-12 switch-container">
                     <div class="title col-md-4"><h1 translate="SEARCH_TITLE"></h1></div>
@@ -72,7 +72,7 @@
                             <switch ng-model="search.model.switch.title" on="{{ 'YES' | translate }}" off="{{ 'NO' | translate }}" class="green"></switch>
                         </form>
                     </div>
-                    <div class="col-md-1 switch-info" title="Enable the switch means that terms must appears only in the title of the text."><i class="glyphicon glyphicon-info-sign"></i></div>
+                    <div class="col-md-1 switch-info" title="{{ 'SEARCH_TITLE_HELP' | translate}}"><i class="glyphicon glyphicon-info-sign"></i></div>
                 </div>
                 <div id="order-container" class="col-md-12 switch-container">
                     <div class="title col-md-4"><h1 translate="SEARCH_ORDERED"></h1></div>
@@ -81,7 +81,7 @@
                             <switch ng-model="search.model.switch.order" on="{{ 'YES' | translate }}" off="{{ 'NO' | translate }}" class="green"></switch>
                         </form>
                     </div>
-                    <div class="col-md-1 switch-info" title="Enable the switch means that the terms typed in the search bar must appear in the text with the same order that they appear in the bar. When the switch is disabled the order of the terms does not matter."><i class="glyphicon glyphicon-info-sign"></i></div>
+                    <div class="col-md-1 switch-info" title="{{ 'SEARCH_ORDERED_HELP' | translate}}"><i class="glyphicon glyphicon-info-sign"></i></div>
                 </div>
                 <div id="bilingue-container" class="col-md-12 switch-container">
                     <div class="title col-md-4"><h1 translate="BILINGUAL_SEARCH"></h1></div>
@@ -90,7 +90,7 @@
                             <switch ng-model="search.model.switch.bilingual" on="{{ 'YES' | translate }}" off="{{ 'NO' | translate }}" class="green"></switch>
                         </form>
                     </div>
-                    <div class="col-md-1 switch-info" title="Enable the switch means that the search is only for text with translation in at least the two languages selected."><i class="glyphicon glyphicon-info-sign"></i></div>
+                    <div class="col-md-1 switch-info" title="{{ 'BILINGUAL_SEARCH_HELP' | translate}}"><i class="glyphicon glyphicon-info-sign"></i></div>
                 </div>
                 <div id="distance-container" class="col-md-12 switch-container">
                     <div class="title col-md-4"><h1 translate="SEARCH_DISTANCE"></h1></div>
@@ -99,7 +99,7 @@
                             <switch ng-model="search.model.switch.distance" on="{{ 'YES' | translate }}" off="{{ 'NO' | translate }}" class="green"></switch>
                         </form>
                     </div>
-                    <div class="col-md-1 switch-info" title="Enable the switch means that the distance between terms must be exactly the specified. When the switch is disabled the terms could appear in any of the 'n' next positions from the term before."><i class="glyphicon glyphicon-info-sign"></i></div>
+                    <div class="col-md-1 switch-info" title="{{ 'SEARCH_DISTANCE_HELP' | translate}}"><i class="glyphicon glyphicon-info-sign"></i></div>
                 </div>
             </div>
         </div>
@@ -107,16 +107,6 @@
 
     <div class="modal" id="ajax-load"></div>
     <div id="test-text"></div>
-    <div id="total-hits" class="col-md-12" ng-show="search.model.result.showNumMatches">Se han encontrado {{search.model.result.numMatches}} parrafo(s)</div>
-    <table style="width:100%" id="result-wrapper">
-        <tr ng-repeat="result in search.model.result.matches">
-            <td style="text-align: right;" width="{{search.model.result.config.side}}">{{result.previous}}</td>
-            <td style="text-align: center; color: blue;" width="{{search.model.result.config.center}}">{{result.target}}</td> 
-            <td style="text-align: left;" width="{{search.model.result.config.side}}">{{result.next}}</td>
-        </tr>
-    </table>
-    <div id='paginador' class='col-lg-12 col-md-12 col-sm-12 col-xs-12' style="float: left; clear: both;"></div>
-    <div id='paginador-letras' class='col-lg-12 col-md-12 col-sm-12 col-xs-12' style="float: left; clear: both;"></div>
 
     <!-- Modal -->
     <div id="config-dialog" class="modal fade" role="dialog">
@@ -150,4 +140,29 @@
             </div>
         </div>
     </div>
+</div>
+
+<div id="total-hits" class="col-md-12" ng-show="search.model.result.showNumMatches">Se han encontrado {{search.model.result.numMatches}} parrafo(s)</div>
+<div style="width:98%" id="result-wrapper">
+    <div ng-repeat="result in search.model.result.matches" style="margin-left: 10px; width: 100%; white-space: nowrap;">
+        <div ng-style="search.model.result.config.before" ng-bind-html="result.previous"></div>
+        <div ng-style="search.model.result.config.center" ng-bind="result.target"></div> 
+        <div ng-style="search.model.result.config.after" ng-bind-html="result.next"></div>
+        <div ng-style="search.model.result.config.discourses" ng-bind-html="result.discourses"></div>
+    </div>
+</div>
+<div class="col-md-12 text-center" ng-show="search.showPager()">
+    <uib-pagination 
+        items-per-page="1" class="pagination-sm" boundary-links="true" total-items="search.model.result.pager.numPages" ng-change="search.pageChanged()"
+        ng-model="search.model.result.pager.currentPage" max-size="search.model.result.pager.maxSize" boundary-link-numbers="true"
+        first-text="{{ 'FIRST' | translate}}" last-text="{{ 'LAST' | translate}}" previous-text="{{ 'PREVIOUS' | translate}}" next-text="{{ 'NEXT' | translate}}"
+        ></uib-pagination>
+</div>
+<div class="col-md-12 text-center" id="letter-paginator" ng-show="search.showPager()">
+    <ul class="pagination">
+        <li style="cursor: pointer;" ng-click="search.searchLetter($event)" ng-repeat="letter in search.model.result.pager.letters"
+            ng-class="{true:'active', false:''}[search.model.order.letter === letter]" >
+            <a>{{letter}}</a>
+        </li>
+    </ul>
 </div>
