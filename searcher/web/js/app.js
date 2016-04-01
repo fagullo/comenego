@@ -38,11 +38,6 @@ comenego.factory('broadcastService', function ($rootScope) {
     sharedService.login = function () {
         this.broadcastItem("login");
     };
-    
-    sharedService.login = function (msg) {
-        sharedService.message = msg;
-        this.broadcastItem("languageChanged");
-    };
 
     sharedService.broadcastItem = function (event) {
         $rootScope.$broadcast(event);

@@ -3,7 +3,7 @@
         <div class="panel-heading" translate="SEARCH_CONFIGURATION"></div>
         <div class="panel-body">
             <div class="col-md-12" id="form-wrapper" style="float:left;">
-                <form ng-submit="search.search()" method="POST" class="form-inline col-md-8 col-md-offset-2" role="form">
+                <form ng-submit="search.configureSearch()" method="POST" class="form-inline col-md-8 col-md-offset-2" role="form">
                     <div class="input-group col-md-12">
                         <div class="input-group-btn">
                             <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -16,9 +16,12 @@
                         </div><!-- /btn-group -->
                         <input type="text" ng-model="search.model.search.text" class="form-control" placeholder="{{ 'SEARCH_TEXT' | translate }}">
                         <span class="input-group-btn">
-                            <button type="button" class="btn btn-info" aria-label="Config" id="config-button">
+<!--                            <button type="button" class="btn btn-info" aria-label="Config" id="config-button" data-target="#myModal">
                                 <i class="glyphicon glyphicon-eye-open" aria-hidden="true"></i>
-                            </button>
+                            </button>-->
+<!--                            <button type="button" class="btn btn-info" data-toggle="modal" data-target="#config-dialog">
+                                <i class="glyphicon glyphicon-eye-open" aria-hidden="true"></i>
+                            </button>-->
                             <button class="btn btn-primary" type="submit" translate="SEARCH"></button>
                         </span>
                     </div>
@@ -36,18 +39,18 @@
                         <div class="title col-md-12" style="margin-top: -5px;"><h1 translate="ORDEN">:</h1></div>
 
                         <div class="btn-group" role="group">
-                            <button type="button" ng:class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.field === 'relevance']" ng-click="search.changeOrderField('relevance')">{{ 'ORDEN_PRIORIDAD' | translate }}</button>
-                            <button type="button" ng:class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.field === 'before']" ng-click="search.changeOrderField('before')">{{ 'ORDEN_ANTERIOR' | translate }}</button>
-                            <button type="button" ng:class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.field === 'after']" ng-click="search.changeOrderField('after')">{{ 'ORDEN_SIGUIENTE' | translate }}</button>
+                            <button type="button" ng-class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.field === 'relevance']" ng-click="search.changeOrderField('relevance')">{{ 'ORDEN_PRIORIDAD' | translate }}</button>
+                            <button type="button" ng-class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.field === 'before']" ng-click="search.changeOrderField('before')">{{ 'ORDEN_ANTERIOR' | translate }}</button>
+                            <button type="button" ng-class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.field === 'after']" ng-click="search.changeOrderField('after')">{{ 'ORDEN_SIGUIENTE' | translate }}</button>
                         </div>
                     </div>
                     <div class="col-md-6 discourse-wrapper" ng-hide="search.model.order.field == 'relevance'">
                         <div class="title col-md-12" style="margin-top: -5px;"><h1 translate="ORDEN_SKIP">: </h1></div>
                         <div class="btn-group" role="group">
-                            <button type="button" ng:class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.skip === 1]" ng-click="search.changeOrderSkip(1)">1</button>
-                            <button type="button" ng:class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.skip === 2]" ng-click="search.changeOrderSkip(2)">2</button>
-                            <button type="button" ng:class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.skip === 3]" ng-click="search.changeOrderSkip(3)">3</button>
-                            <button type="button" ng:class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.skip === 4]" ng-click="search.changeOrderSkip(4)">4</button>
+                            <button type="button" ng-class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.skip === 1]" ng-click="search.changeOrderSkip(1)">1</button>
+                            <button type="button" ng-class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.skip === 2]" ng-click="search.changeOrderSkip(2)">2</button>
+                            <button type="button" ng-class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.skip === 3]" ng-click="search.changeOrderSkip(3)">3</button>
+                            <button type="button" ng-class="{true:'btn btn-primary active', false:'btn btn-primary'}[search.model.order.skip === 4]" ng-click="search.changeOrderSkip(4)">4</button>
                         </div>
                     </div>
                 </div>
@@ -78,7 +81,7 @@
                             <switch ng-model="search.model.switch.order" on="{{ 'YES' | translate }}" off="{{ 'NO' | translate }}" class="green"></switch>
                         </form>
                     </div>
-                    <div class="col-md-1 switch-info" title="Enable the switch means that the terms typed in the search bar must appear in the text with the same order that they appear in the bar. When the switch is disabled the order of the terms does not matters."><i class="glyphicon glyphicon-info-sign"></i></div>
+                    <div class="col-md-1 switch-info" title="Enable the switch means that the terms typed in the search bar must appear in the text with the same order that they appear in the bar. When the switch is disabled the order of the terms does not matter."><i class="glyphicon glyphicon-info-sign"></i></div>
                 </div>
                 <div id="bilingue-container" class="col-md-12 switch-container">
                     <div class="title col-md-4"><h1 translate="BILINGUAL_SEARCH"></h1></div>
@@ -101,52 +104,50 @@
             </div>
         </div>
     </div>
-    <div id="total-hits" style="display: none; clear: both; text-align: center;" class="col-md-12">Se han encontrado <b id="num-docs"></b> parrafo(s)</div>
-    <ul id="hits" class="col-md-12" style="float: left; clear: both;">
-    </ul>
+
+    <div class="modal" id="ajax-load"></div>
+    <div id="test-text"></div>
+    <div id="total-hits" class="col-md-12" ng-show="search.model.result.showNumMatches">Se han encontrado {{search.model.result.numMatches}} parrafo(s)</div>
+    <table style="width:100%" id="result-wrapper">
+        <tr ng-repeat="result in search.model.result.matches">
+            <td style="text-align: right;" width="{{search.model.result.config.side}}">{{result.previous}}</td>
+            <td style="text-align: center; color: blue;" width="{{search.model.result.config.center}}">{{result.target}}</td> 
+            <td style="text-align: left;" width="{{search.model.result.config.side}}">{{result.next}}</td>
+        </tr>
+    </table>
     <div id='paginador' class='col-lg-12 col-md-12 col-sm-12 col-xs-12' style="float: left; clear: both;"></div>
     <div id='paginador-letras' class='col-lg-12 col-md-12 col-sm-12 col-xs-12' style="float: left; clear: both;"></div>
-</div>
 
-<div id="config-dialog">
-    <p class="col-md-12">Click in any node but the last to configure the search.</p>
-    <div id="arrows-container" class="col-md-12" style="float: left;">
-        <div id="graph-wrapper"></div>
+    <!-- Modal -->
+    <div id="config-dialog" class="modal fade" role="dialog">
+        <div class="modal-dialog" id="config-content">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title" translate="SEARCH_CONFIGURE"></h4>
+                </div>
+                <div class="modal-body">
+                    <p>Click in any node but the last to configure the search.</p>
+                    <div id="arrows-container">
+                        <div id="graph-wrapper"></div>
+                    </div>
+                    <div style='text-align: center;' ng-show="search.config.graph.show">
+                        <p>Click any node to set as main.</p>
+                        <div class='displayable-term' ng-click="search.setAsMain($event)" id='modalWord-{{search.config.graph.word1ID}}' ng-bind="search.config.graph.word1"></div>
+                        <div class='distance-wrapper-modal'>
+                            <div class='btn-group' role='group' aria-label='btn-group-1'>
+                                <button type='button' class='btn btn-warning subDistance' ng-click="search.subDistance()"><i class='glyphicon glyphicon-chevron-left'></i></button>
+                                <div class='btn btn-primary disabled distance-display' id='word-distance' ng-bind="search.config.graph.distance"></div>
+                                <button type='button' class='btn btn-warning addDistance' ng-click="search.addDistance()"><i class='glyphicon glyphicon-chevron-right'></i></button>
+                            </div>
+                        </div>
+                        <div class='displayable-term' ng-click="search.setAsMain($event)" id='modalWord-{{search.config.graph.word2ID}}' ng-bind="search.config.graph.word2"></div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="margin-top: 25px;">
+                    <button type="button" class="btn btn-success" data-dismiss="modal" translate="SEARCH" ng-click="search.search()"></button>
+                </div>
+            </div>
+        </div>
     </div>
-    <div id="search-config-body-content" class="col-md-12" style="float: left;"></div>
-    <div class="col-md-4 right" id="config-footer">
-        <button type="button" class="btn btn-danger" id="config-close">Close</button>
-    </div>
 </div>
-
-<div class="modal" id="ajax-load"></div>
-<div id="test-text">{{search.model.search.text}}</div>
-<table style="width:100%" id="result-wrapper">
-    <tr ng-repeat="result in search.model.result.matches">
-        <td style="text-align: right;" width="{{search.model.result.config.side}}">{{result.previous}}</td>
-        <td style="text-align: center; color: blue;" width="{{search.model.result.config.center}}">{{result.target}}</td> 
-        <td style="text-align: left;" width="{{search.model.result.config.side}}">{{result.next}}</td>
-    </tr>
-</table>
-
-<script>
-        $("#config-dialog").dialog({
-            autoOpen: false,
-            modal: true,
-            title: "Configure Search Criteria",
-            width: 1200,
-            height: 400,
-            minWidth: 1000,
-            show: {
-                effect: "clip",
-                duration: 1000
-            },
-            hide: {
-                effect: "clip",
-                duration: 1000
-            }
-        });
-        $(function() {
-            $(document).tooltip();
-        });
-</script>

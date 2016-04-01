@@ -3,9 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package es.ua.labidiomas.corpus.login;
 
+import es.ua.labidiomas.corpus.database.DataBaseHandler;
 import es.ua.labidiomas.corpus.exception.LoginException;
 import es.ua.labidiomas.corpus.util.Config;
 import java.net.URI;
@@ -38,6 +38,8 @@ public class LoginHandler {
 
     @Context
     private UriInfo context;
+    
+    private final static String LOGIN_QUERY = "SELECT * FROM user WHERE username = ? AND password = SHA2(?, 256)";
 
     /**
      * Creates a new instance of Login
@@ -52,22 +54,16 @@ public class LoginHandler {
     public Response login(LoginParameters parameters, @Context HttpServletRequest request, @Context HttpServletResponse response) throws ClassNotFoundException, SQLException, URISyntaxException, LoginException {
 
         HttpSession session = request.getSession();
-        Class.forName("com.mysql.jdbc.Driver");
-        Connection connection = null;
-        try {
-            connection = DriverManager.getConnection(Config.CONEXION_STRING, Config.DB_USER, Config.DB_PASS);
-            PreparedStatement loginPS = connection.prepareStatement("SELECT * FROM user WHERE username = ? AND password = SHA2(?, 256)");
+//        Class.forName("com.mysql.jdbc.Driver");
+        try (Connection connection = DataBaseHandler.getConnection(); PreparedStatement loginPS = connection.prepareStatement(LOGIN_QUERY);) {
             loginPS.setString(1, parameters.getName());
             loginPS.setString(2, parameters.getPassword());
-            ResultSet loginQuery = loginPS.executeQuery();
-            if (loginQuery.next()) {
-                session.setAttribute("userID", parameters.getName());
-            } else {
-                throw new LoginException("<strong>Error!</strong> Nombre de usuario o contraseña incorrectos.");
-            }
-        } finally {
-            if (connection != null) {
-                connection.close();
+            try (ResultSet loginQuery = loginPS.executeQuery();) {
+                if (loginQuery.next()) {
+                    session.setAttribute("userID", parameters.getName());
+                } else {
+                    throw new LoginException("<strong>Error!</strong> Nombre de usuario o contraseña incorrectos.");
+                }
             }
         }
         return Response.status(200).build();
@@ -87,7 +83,7 @@ public class LoginHandler {
         }
         return Response.temporaryRedirect(new URI("/searcher")).build();
     }
-    
+
     @GET
     @Path("isLoged")
     @Produces(MediaType.TEXT_PLAIN)

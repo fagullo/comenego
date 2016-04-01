@@ -105,12 +105,18 @@ footer, header {
     text-align: center;
     padding-top: 8px; 
     margin: 0 !important;
+    display: inline-block;
+}
+
+.distance-wrapper-modal {
+    display: inline-block;
 }
 
 .displayable-term-main {
     background-color: #bbeaff;
 }
-.arrowsandboxes-node {
+
+.clickable-node {
     cursor: pointer !important;
 }
 
@@ -149,22 +155,6 @@ body.loading #ajax-load {
     display: block;
 }
 
-.snippet {
-    font-family: monospace;
-}
-
-.snippet>div>b {
-    color: blue;
-}
-
-.snippet>div>i {
-    color: red;
-}
-
-#hits {
-    list-style-type: none;
-}
-
 .btn-group-container {
     border: 2px inset #bab8b8;
     -webkit-border-radius: 10px;
@@ -178,6 +168,11 @@ body.loading #ajax-load {
     padding: 0 !important;
 }
 
+#total-hits {
+    clear: both;
+    text-align: center;
+    margin-bottom: 20px;
+}
 
 #test-text
 {
@@ -185,7 +180,7 @@ body.loading #ajax-load {
     visibility: hidden;
     height: auto;
     width: auto;
-    white-space: nowrap; /* Thanks to Herb Caudill comment */
+    white-space: nowrap;
 }
 
 /************************************************
@@ -218,4 +213,13 @@ body.loading #ajax-load {
 .switch-info {
     color: #55b1f1;
     cursor: help;
+}
+
+
+/**********************************
+*************** MODAL *************
+**********************************/
+
+#config-content {
+    width: 1200px;
 }

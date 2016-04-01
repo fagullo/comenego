@@ -1031,7 +1031,6 @@ exists or setup the property manually. For example like this:
         <copyfiles files="${libs.JSON_SIMPLE.classpath}" iftldtodir="${build.web.dir}/WEB-INF" todir="${dist.ear.dir}/lib"/>
         <copyfiles files="${libs.restapi.classpath}" iftldtodir="${build.web.dir}/WEB-INF" todir="${dist.ear.dir}/lib"/>
         <copyfiles files="${libs.restlib.classpath}" iftldtodir="${build.web.dir}/WEB-INF" todir="${dist.ear.dir}/lib"/>
-        <copyfiles files="${libs.SqlWrapper1.2.classpath}" iftldtodir="${build.web.dir}/WEB-INF" todir="${dist.ear.dir}/lib"/>
         <copyfiles files="${file.reference.searcher-config}" todir="${build.web.dir}//config"/>
         <mkdir dir="${build.web.dir}/META-INF"/>
         <manifest file="${build.web.dir}/META-INF/MANIFEST.MF" mode="update"/>
@@ -1045,7 +1044,6 @@ exists or setup the property manually. For example like this:
         <copyfiles files="${libs.JSON_SIMPLE.classpath}" todir="${build.web.dir}/WEB-INF/lib"/>
         <copyfiles files="${libs.restapi.classpath}" todir="${build.web.dir}/WEB-INF/lib"/>
         <copyfiles files="${libs.restlib.classpath}" todir="${build.web.dir}/WEB-INF/lib"/>
-        <copyfiles files="${libs.SqlWrapper1.2.classpath}" todir="${build.web.dir}/WEB-INF/lib"/>
         <copyfiles files="${file.reference.searcher-config}" todir="${build.web.dir}//config"/>
     </target>
     <target depends="init" if="dist.ear.dir" name="-clean-webinf-lib">

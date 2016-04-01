@@ -3,8 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package es.ua.labidiomas.corpus.searcher;
+package es.ua.labidiomas.corpus.searcher.search;
 
+import es.ua.labidiomas.corpus.searcher.SubSearch;
 import java.util.List;
 
 /**
