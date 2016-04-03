@@ -84,7 +84,8 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
     self.model = {};
     self.model.nodes = [];
     self.model.search = {};
-    self.model.search.text = "estatutos sociales de";
+    self.model.search.isBilingual = false;
+    self.model.search.text = "";
     self.model.search.config = [];
     self.model.switch = {};
     self.model.switch.lemmatize = false;
@@ -126,7 +127,7 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
 
     self.model.result = {};
     self.model.result.pager = {};
-    self.model.result.pager.letters = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'];
+    self.model.result.pager.letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
     self.model.result.pager.currentPage = 1;
     self.model.result.pager.numPages = 1;
     self.model.result.pager.maxSize = 10;
@@ -156,6 +157,7 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
     };
 
     self.model.result.matches = [];
+    self.model.result.bilingual = [];
     self.model.result.numMatches = -1;
     self.model.result.showNumMatches = false;
 
@@ -299,7 +301,7 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         $("#arrows-container").append("<pre id='arrows' class='arrows-and-boxes'>" + content + "</pre>");
         $("#arrows").arrows_and_boxes();
     };
-    
+
     self.searchLetter = function($event) {
         self.model.order.letter = $($event.currentTarget).children('a').html();
         self.config.lastSearch.sort.letter = self.model.order.letter;
@@ -319,7 +321,11 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
             },
             data: JSON.stringify(self.config.lastSearch)
         };
-        $http(request).then(self.searchSuccess, self.searchError);
+        if (self.model.switch.bilingual) {
+            $http(request).then(self.searchBilingualSuccess, self.searchError);
+        } else {
+            $http(request).then(self.searchSuccess, self.searchError);
+        }
         $("#pleaseWaitDialog").modal();
         $("body").addClass("loading");
     };
@@ -352,7 +358,9 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
     self.searchSuccess = function(data, status) {
         $("body").removeClass("loading");
         var textWidth = 0;
+        self.model.search.isBilingual = false;
         self.model.result.matches = [];
+        self.model.result.bilingual = [];
         for (var i = 0; i < data.data.matches.length; i++) {
             var hit = data.data.matches[i];
             var p1 = hit.snippet.indexOf("<b>"), p2 = hit.snippet.indexOf("</b>");
@@ -376,6 +384,35 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         self.model.result.showNumMatches = true;
         self.model.result.pager.numPages = data.data.numPages;
         self.calculateTextSize(textWidth + 8);
+    };
+    
+    self.searchBilingualSuccess = function(data, status) {
+        $("body").removeClass("loading");
+        console.log(data.data);
+        var textWidth = 0;
+        self.model.search.isBilingual = true;
+        self.model.result.matches = [];
+        self.model.result.bilingual = [];
+        for (var i = 0; i < data.data.matches.length; i++) {
+            var hit = data.data.matches[i];
+            var p1 = hit.snippet.indexOf("<b>"), p2 = hit.snippet.indexOf("</b>");
+            var target = hit.snippet.substring(p1 + 3, p2);
+            self.model.result.bilingual.push({
+                previous: hit.original,
+                target: $sce.trustAsHtml(hit.snippet),
+                next:hit.translation,
+                discourses: hit.discourses,
+                link: hit.url
+            });
+            $("#test-text").html(target);
+            var newSize = parseInt($("#test-text").css("width").substring(0, $("#test-text").css("width").length - 2));
+            if (textWidth < newSize) {
+                textWidth = newSize;
+            }
+        }
+        self.model.result.numMatches = data.data.numDocs ? data.data.numDocs : 0;
+        self.model.result.showNumMatches = true;
+        self.model.result.pager.numPages = data.data.numPages;
     };
 
     self.showPager = function() {

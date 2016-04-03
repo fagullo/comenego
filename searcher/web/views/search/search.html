@@ -6,22 +6,21 @@
                 <form ng-submit="search.configureSearch()" method="POST" class="form-inline col-md-8 col-md-offset-2" role="form">
                     <div class="input-group col-md-12">
                         <div class="input-group-btn">
-                            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <img ng-src="{{search.model.lang.selected.img}}" height="18"/>&nbsp;&nbsp;<span class="caret"></span></button>
-                            <ul class="dropdown-menu">
-                                <li ng-repeat="lang in search.model.lang.available">
-                                    <a class="lang-selector" ng-click="search.changeLanguage($index)">{{lang.name}}</a>
-                                </li>
-                            </ul>
+                            <span uib-dropdown on-toggle="toggled(open)">
+                                <a href id="simple-dropdown" uib-dropdown-toggle>
+                                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <img ng-src="{{search.model.lang.selected.img}}" height="18"/>&nbsp;&nbsp;<span class="caret"></span>
+                                    </button>
+                                </a>
+                                <ul uib-dropdown-menu aria-labelledby="simple-dropdown">
+                                    <li ng-repeat="lang in search.model.lang.available">
+                                        <a class="lang-selector" ng-click="search.changeLanguage($index)">{{lang.name}}</a>
+                                    </li>
+                                </ul>
+                            </span>
                         </div><!-- /btn-group -->
                         <input type="text" ng-model="search.model.search.text" class="form-control" placeholder="{{ 'SEARCH_TEXT' | translate }}">
                         <span class="input-group-btn">
-                            <!--                            <button type="button" class="btn btn-info" aria-label="Config" id="config-button" data-target="#myModal">
-                                                            <i class="glyphicon glyphicon-eye-open" aria-hidden="true"></i>
-                                                        </button>-->
-                            <!--                            <button type="button" class="btn btn-info" data-toggle="modal" data-target="#config-dialog">
-                                                            <i class="glyphicon glyphicon-eye-open" aria-hidden="true"></i>
-                                                        </button>-->
                             <button class="btn btn-primary" type="submit" translate="SEARCH"></button>
                         </span>
                     </div>
@@ -143,12 +142,26 @@
 </div>
 
 <div id="total-hits" class="col-md-12" ng-show="search.model.result.showNumMatches">Se han encontrado {{search.model.result.numMatches}} parrafo(s)</div>
-<div style="width:98%" id="result-wrapper">
+<div style="width:98%" id="result-wrapper" class="result-wrapper">
     <div ng-repeat="result in search.model.result.matches" style="margin-left: 10px; width: 100%; white-space: nowrap;">
         <div ng-style="search.model.result.config.before" ng-bind-html="result.previous"></div>
         <div ng-style="search.model.result.config.center" ng-bind="result.target"></div> 
         <div ng-style="search.model.result.config.after" ng-bind-html="result.next"></div>
         <div ng-style="search.model.result.config.discourses" ng-bind-html="result.discourses"></div>
+    </div>
+</div>
+<div style="width:98%; display: table;" class="result-wrapper">
+    <div style="margin-left: 10px; width: 100%; border-bottom: 1px solid black; display: table-row" ng-show="search.model.search.isBilingual">
+        <div style="display: table-cell; width:30%; text-align: center;">Original</div>
+        <div style="display: table-cell; width:30%; text-align: center;">Fragmento</div> 
+        <div style="display: table-cell; width:30%; text-align: center;">Traducción</div>
+        <div style="display: table-cell; width: 8%;text-align: center;">Discursos</div>
+    </div>
+    <div ng-repeat="result in search.model.result.bilingual" style="margin-left: 10px; width: 100%; display: table-row;">
+        <div class="bilingual-container" ng-bind-html="result.previous"></div>
+        <div class="bilingual-container" ng-bind-html="result.target"></div> 
+        <div class="bilingual-container" ng-bind-html="result.next"></div>
+        <div style="display: table-cell; width: 8%; text-align: center; vertical-align: middle;" ng-bind-html="result.discourses"></div>
     </div>
 </div>
 <div class="col-md-12 text-center" ng-show="search.showPager()">

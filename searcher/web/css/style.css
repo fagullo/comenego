@@ -224,6 +224,20 @@ body.loading #ajax-load {
     width: 1200px;
 }
 
-#result-wrapper>div>div>i {
+.result-wrapper>div>div>i {
     color : red;
+}
+
+.bilingual-container {
+    display: table-cell;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    width:30%;
+    text-align: justify;
+    padding: 5px;
+    vertical-align: middle;
+}
+
+.bilingual-container>b {
+    color: blue;
 }

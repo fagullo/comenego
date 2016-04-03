@@ -75,10 +75,10 @@ public class Comenego {
 
         SearchResponse result = new SearchResponse();
         List<LuceneSnippet> snippets = new ArrayList<>();
-        try (Connection connection = DataBaseHandler.getConnection();){
+        try (Connection connection = DataBaseHandler.getConnection();) {
             if (parameters.getDiscourses() != null) {
                 Analyzer analyzer = searcher.getAnalyzer(parameters.getLanguage(), parameters.getOptions().isLematize());
-                IndexSearcher indexSearcher = searcher.prepareIndexSearcher(parameters.getLanguage(), parameters.getSearch(), parameters.getOptions().isLematize(), parameters.getOptions().isTitle());
+                IndexSearcher indexSearcher = searcher.prepareIndexSearcher(parameters.getLanguage(), parameters.getOptions());
                 BooleanQuery searchQuery = searcher.prepareQuery(analyzer, parameters);
                 Highlighter textHighlighter = searcher.prepareHighlighter(analyzer, parameters);
 
@@ -95,7 +95,7 @@ public class Comenego {
                         int top = Math.min(groupDoc.scoreDocs.length, numPageResults);
                         for (int i = offset; i < top; i++) {
                             ScoreDoc sd = groupDoc.scoreDocs[i];
-                            searcher.getSnippets(parameters.getSearch().length(), snippets, sd, indexSearcher, connection, analyzer, textHighlighter, parameters.getOptions().isTitle());
+                            searcher.getSnippets(parameters.getSearch().length(), snippets, sd, indexSearcher, connection, analyzer, textHighlighter, parameters.getOptions().isTitle(), parameters.getOptions().isBilingual());
                         }
                     }
                 }

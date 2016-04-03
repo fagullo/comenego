@@ -17,6 +17,10 @@ public class LuceneSnippet {
     private String url;
     
     private String discourses;
+    
+    private String translation;
+    
+    private String original;
 
     public LuceneSnippet() {
     }
@@ -49,5 +53,21 @@ public class LuceneSnippet {
 
     public void setDiscourses(String discourses) {
         this.discourses = discourses;
+    }
+
+    public String getTranslation() {
+        return translation;
+    }
+
+    public void setTranslation(String translation) {
+        this.translation = translation;
+    }
+
+    public String getOriginal() {
+        return original;
+    }
+
+    public void setOriginal(String original) {
+        this.original = original;
     }
 }

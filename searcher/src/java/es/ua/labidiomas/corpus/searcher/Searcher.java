@@ -8,6 +8,7 @@ package es.ua.labidiomas.corpus.searcher;
 import es.ua.labidiomas.corpus.index.AnalyzerFactory;
 import es.ua.labidiomas.corpus.searcher.search.SearchConfiguration;
 import es.ua.labidiomas.corpus.searcher.search.SearchNode;
+import es.ua.labidiomas.corpus.searcher.search.SearchOptions;
 import es.ua.labidiomas.corpus.searcher.search.SearchParameters;
 import es.ua.labidiomas.corpus.util.Config;
 import java.io.File;
@@ -70,6 +71,9 @@ public class Searcher {
     private static final String DISCOURSES_QUERY = "SELECT d.code as name FROM paragraph p , discourse_texts dt, discourse d"
             + " WHERE dt.text_id = ? AND p.text_id = dt.text_id AND p.id = ? AND d.id = dt.discourse_id;";
 
+    private static final String TRANSLATION_QUERY = "SELECT p.content FROM text t, paragraph p WHERE t.id = ? AND t.id = p.text_id AND p.numorder = ?;";
+    private static final String ORIGIN_QUERY = "SELECT t.original_text_id, p.numorder FROM text t, paragraph p WHERE p.id = ? AND t.id = p.text_id;";
+
     public List<LuceneSnippet> getTextSnippets(
             int termSize,
             List<LuceneSnippet> snippets,
@@ -78,7 +82,7 @@ public class Searcher {
             Connection connection,
             Analyzer analyzer,
             Highlighter textHighlighter,
-            boolean isSubSearch
+            boolean isBilingual
     ) throws IOException, SQLException, InvalidTokenOffsetsException {
         Document doc = indexSearcher.doc(sd.doc);
         int paragraphID = Integer.parseInt(doc.get("paragraphID"));
@@ -106,7 +110,7 @@ public class Searcher {
                         if (frag.getScore() > 0) {
                             String snippet = frag.toString().replaceAll("[\n\r]", "").replaceAll("</b> <b>", " ").trim();
                             int numMatches = StringUtils.countMatches(snippet, "<b>");
-                            if (numMatches > 1 && !isSubSearch) {
+                            if (numMatches > 1) {
                                 int start = 0;
                                 int end = 0;
                                 for (int i = 0; i < numMatches; i++) {
@@ -122,12 +126,18 @@ public class Searcher {
                                     result.setUrl(url);
                                     result.setDiscourses(discourses);
                                     start = end;
+                                    if (isBilingual) {
+                                        _setTranslation(result, connection, paragraphID, textRS.getString("content"));
+                                    }
                                     snippets.add(result);
                                 }
                             } else if (snippet.length() > termSize) {
                                 result.setSnippet(snippet);
                                 result.setUrl(url);
                                 result.setDiscourses(discourses);
+                                if (isBilingual) {
+                                    _setTranslation(result, connection, paragraphID, textRS.getString("content"));
+                                }
                                 snippets.add(result);
                             }
                         }
@@ -232,12 +242,13 @@ public class Searcher {
             Connection connection,
             Analyzer analyzer,
             Highlighter textHighlighter,
-            boolean isTitle
+            boolean isTitle,
+            boolean isBilingual
     ) throws IOException, SQLException, InvalidTokenOffsetsException {
         if (isTitle) {
             return getTitleSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter);
         } else {
-            return getTextSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter, false);
+            return getTextSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter, isBilingual);
         }
     }
 
@@ -283,18 +294,21 @@ public class Searcher {
      * Prepares the index searcher to read the indexes in the indexes directory.
      *
      * @param language
-     * @param searchText
      * @param title
      * @param lemma
+     * @param bilingual
      * @return @throws IOException
      */
-    public IndexSearcher prepareIndexSearcher(String language, String searchText, boolean lemma, boolean title) throws IOException {
+    public IndexSearcher prepareIndexSearcher(String language, SearchOptions options) throws IOException {
         File indexDir;
         String baseIndexDir = Config.INDEXES_PATH + Config.FILE_SEPARATOR;
-        if (title) {
+        if (options.isBilingual()) {
+            baseIndexDir += "bilingual" + Config.FILE_SEPARATOR;
+        }
+        if (options.isTitle()) {
             baseIndexDir += "title" + Config.FILE_SEPARATOR;
         }
-        if (lemma) {
+        if (options.isLematize()) {
             indexDir = new File(baseIndexDir + "lemma" + Config.FILE_SEPARATOR + language);
         } else {
             indexDir = new File(baseIndexDir + language);
@@ -434,5 +448,27 @@ public class Searcher {
             }
         }
         snippet.setSnippet(word);
+    }
+
+    private void _setTranslation(LuceneSnippet result, Connection connection, int paragraphID, String original) throws SQLException {
+        String translation = "";
+        try (PreparedStatement originalPS = connection.prepareStatement(ORIGIN_QUERY)) {
+            originalPS.setDouble(1, paragraphID);
+            try (ResultSet originalRS = originalPS.executeQuery()) {
+                originalRS.next();
+                double textID = originalRS.getDouble("original_text_id");
+                int numorder = originalRS.getInt("numorder");
+                try (PreparedStatement translatePS = connection.prepareStatement(TRANSLATION_QUERY)) {
+                    translatePS.setDouble(1, textID);
+                    translatePS.setInt(2, numorder);
+                    try (ResultSet translateRS = translatePS.executeQuery()) {
+                        translateRS.next();
+                        translation = translateRS.getString("content");
+                    }
+                }
+            }
+        }
+        result.setOriginal(original);
+        result.setTranslation(translation);
     }
 }
