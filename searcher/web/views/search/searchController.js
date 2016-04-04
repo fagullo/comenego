@@ -212,15 +212,19 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
     self.configureSearch = function() {
         self.config.graph.show = false;
         self.calculateSearchNodes();
-        self.fillGraph();
-        if (self.model.nodes.length > self.config.graph.maxNodes * 3) {
-            $("#config-footer").css("bottom", "auto");
+        if (self.model.nodes.length < 2) {
+            self.search();
         } else {
-            $("#config-footer").css("bottom", "10px");
+            self.fillGraph();
+            if (self.model.nodes.length > self.config.graph.maxNodes * 3) {
+                $("#config-footer").css("bottom", "auto");
+            } else {
+                $("#config-footer").css("bottom", "10px");
+            }
+            var nodes = $(".arrowsandboxes-node").addClass("clickable-node");
+            $(nodes[nodes.length - 1]).removeClass("clickable-node");
+            $('#config-dialog').modal('show');
         }
-        var nodes = $(".arrowsandboxes-node").addClass("clickable-node");
-        $(nodes[nodes.length - 1]).removeClass("clickable-node");
-        $('#config-dialog').modal('show');
     };
 
     self.calculateSearchNodes = function() {
@@ -385,7 +389,7 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         self.model.result.pager.numPages = data.data.numPages;
         self.calculateTextSize(textWidth + 8);
     };
-    
+
     self.searchBilingualSuccess = function(data, status) {
         $("body").removeClass("loading");
         console.log(data.data);
@@ -400,7 +404,7 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
             self.model.result.bilingual.push({
                 previous: hit.original,
                 target: $sce.trustAsHtml(hit.snippet),
-                next:hit.translation,
+                next: hit.translation,
                 discourses: hit.discourses,
                 link: hit.url
             });

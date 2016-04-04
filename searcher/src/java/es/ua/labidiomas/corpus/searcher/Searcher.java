@@ -44,6 +44,7 @@ import org.apache.lucene.search.grouping.term.TermFirstPassGroupingCollector;
 import org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
+import org.apache.lucene.search.highlight.NullFragmenter;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleFragmenter;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
@@ -72,6 +73,7 @@ public class Searcher {
             + " WHERE dt.text_id = ? AND p.text_id = dt.text_id AND p.id = ? AND d.id = dt.discourse_id;";
 
     private static final String TRANSLATION_QUERY = "SELECT p.content FROM text t, paragraph p WHERE t.id = ? AND t.id = p.text_id AND p.numorder = ?;";
+    private static final String TRANSLATION_TITLE_QUERY = "SELECT t.title FROM text t WHERE t.id = (SELECT original_text_id FROM text WHERE id = ?);";
     private static final String ORIGIN_QUERY = "SELECT t.original_text_id, p.numorder FROM text t, paragraph p WHERE p.id = ? AND t.id = p.text_id;";
 
     public List<LuceneSnippet> getTextSnippets(
@@ -130,6 +132,7 @@ public class Searcher {
                                         _setTranslation(result, connection, paragraphID, textRS.getString("content"));
                                     }
                                     snippets.add(result);
+                                    result = new LuceneSnippet();
                                 }
                             } else if (snippet.length() > termSize) {
                                 result.setSnippet(snippet);
@@ -139,6 +142,7 @@ public class Searcher {
                                     _setTranslation(result, connection, paragraphID, textRS.getString("content"));
                                 }
                                 snippets.add(result);
+                                result = new LuceneSnippet();
                             }
                         }
                     }
@@ -156,7 +160,8 @@ public class Searcher {
             IndexSearcher indexSearcher,
             Connection connection,
             Analyzer analyzer,
-            Highlighter textHighlighter
+            Highlighter textHighlighter,
+            boolean isBilingual
     ) throws IOException, SQLException, InvalidTokenOffsetsException {
         Document doc = indexSearcher.doc(sd.doc);
         int textID = Integer.parseInt(doc.get("textID"));
@@ -200,13 +205,21 @@ public class Searcher {
                             result.setUrl(url);
                             result.setDiscourses(discourses);
                             start = end;
+                            if (isBilingual) {
+                                _setTitleTranslation(result, connection, textID, textRS.getString("content"));
+                            }
                             snippets.add(result);
+                            result = new LuceneSnippet();
                         }
                     } else if (snippet.length() > termSize) {
                         result.setSnippet(snippet);
                         result.setUrl(url);
                         result.setDiscourses(discourses);
+                        if (isBilingual) {
+                            _setTitleTranslation(result, connection, textID, textRS.getString("content"));
+                        }
                         snippets.add(result);
+                        result = new LuceneSnippet();
                     }
                 }
             }
@@ -225,28 +238,11 @@ public class Searcher {
             Connection connection,
             Analyzer analyzer,
             Highlighter textHighlighter,
-            SearchParameters params
-    ) throws IOException, SQLException, InvalidTokenOffsetsException {
-        if (params.isTitle()) {
-            return getTitleSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter);
-        } else {
-            return getTextSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter, params.isSubSearch());
-        }
-    }
-
-    public List<LuceneSnippet> getSnippets(
-            int termSize,
-            List<LuceneSnippet> snippets,
-            ScoreDoc sd,
-            IndexSearcher indexSearcher,
-            Connection connection,
-            Analyzer analyzer,
-            Highlighter textHighlighter,
             boolean isTitle,
             boolean isBilingual
     ) throws IOException, SQLException, InvalidTokenOffsetsException {
         if (isTitle) {
-            return getTitleSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter);
+            return getTitleSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter, isBilingual);
         } else {
             return getTextSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter, isBilingual);
         }
@@ -269,7 +265,8 @@ public class Searcher {
         QueryScorer scorer = new QueryScorer(query);
         SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
         Highlighter textHighlighter = new Highlighter(formatter, scorer);
-        textHighlighter.setTextFragmenter(new SimpleSpanFragmenter(scorer, 600));
+//        textHighlighter.setTextFragmenter(new SimpleSpanFragmenter(scorer, 600));
+        textHighlighter.setTextFragmenter(new NullFragmenter());
 
         return textHighlighter;
     }
@@ -466,6 +463,19 @@ public class Searcher {
                         translation = translateRS.getString("content");
                     }
                 }
+            }
+        }
+        result.setOriginal(original);
+        result.setTranslation(translation);
+    }
+
+    private void _setTitleTranslation(LuceneSnippet result, Connection connection, double textID, String original) throws SQLException {
+        String translation = "";
+        try (PreparedStatement translatePS = connection.prepareStatement(TRANSLATION_TITLE_QUERY)) {
+            translatePS.setDouble(1, textID);
+            try (ResultSet translateRS = translatePS.executeQuery()) {
+                translateRS.next();
+                translation = translateRS.getString("title");
             }
         }
         result.setOriginal(original);
