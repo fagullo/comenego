@@ -107,20 +107,6 @@ public class SearchConfiguration {
         return this.sort.getLetter() != null;
     }
 
-    public String getSearch() {
-        StringBuilder search = new StringBuilder();
-
-        for (SearchNode node : this.searchNodes) {
-            search.append(node.getWord()).append(" ");
-        }
-
-        return search.toString().trim();
-    }
-
-    public SubSearch getSubsearch() {
-        return null;
-    }
-
     public SearchOptions getOptions() {
         return options;
     }

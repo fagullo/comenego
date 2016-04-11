@@ -1,7 +1,7 @@
 function searchController($rootScope, $http, $sce, atomicNotifyService, $filter) {
 
     var self = this;
-    self.nodeClick = function() {
+    self.nodeClick = function () {
         var arrows = $(".arrowsandboxes-node");
         var labels = $(".arrowsandboxes-label");
         var update = false;
@@ -24,14 +24,14 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         }
     };
 
-    self.addDistance = function() {
+    self.addDistance = function () {
         var distanceValue = parseInt($("#word-distance").html());
         $("#word-distance").html(distanceValue + 1);
         self.model.nodes[self.config.graph.currentTargetNode].distance = distanceValue + 1;
         self.fillGraph();
     };
 
-    self.subDistance = function() {
+    self.subDistance = function () {
         var distanceValue = parseInt($("#word-distance").html()) - 1;
         if (distanceValue > -1) {
             $("#word-distance").html(distanceValue);
@@ -40,7 +40,7 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         self.fillGraph();
     };
 
-    self.setAsMain = function($event) {
+    self.setAsMain = function ($event) {
         var wordID = $($event.currentTarget).attr("id");
         var wordIndex = parseInt(wordID.substring(wordID.indexOf("-") + 1));
         for (var i = 0; i < self.model.nodes.length; i++) {
@@ -53,7 +53,7 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         self.fillGraph();
     };
 
-    $(document).ready(function() {
+    $(document).ready(function () {
         $(document).off().on("click", ".arrowsandboxes-node", self.nodeClick);
     });
 
@@ -95,6 +95,10 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
     self.model.switch.distance = true;
     self.model.lang = {};
     self.model.lang.selected = {
+        code: 'es',
+        img: 'media/img/Spain-32.png'
+    };
+    self.model.lang.bilingual = {
         code: 'es',
         img: 'media/img/Spain-32.png'
     };
@@ -161,29 +165,34 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
     self.model.result.numMatches = -1;
     self.model.result.showNumMatches = false;
 
-    self.setPage = function(pageNo) {
+    self.setPage = function (pageNo) {
         self.model.result.pager.currentPage = pageNo;
     };
 
-    self.pageChanged = function() {
+    self.pageChanged = function () {
         self.config.lastSearch.page = self.model.result.pager.currentPage;
         self.search(self.config.lastSearch);
     };
 
-    self.changeOrderField = function(order) {
+    self.changeOrderField = function (order) {
         self.model.order.field = order;
     };
 
-    self.changeOrderSkip = function(skip) {
+    self.changeOrderSkip = function (skip) {
         self.model.order.skip = skip;
     };
 
-    self.changeLanguage = function(index) {
-        self.model.lang.selected.code = self.model.lang.available[index].code;
-        self.model.lang.selected.img = self.model.lang.available[index].img;
+    self.changeLanguage = function (index, bilingual) {
+        if (bilingual) {
+            self.model.lang.bilingual.code = self.model.lang.available[index].code;
+            self.model.lang.bilingual.img = self.model.lang.available[index].img;
+        } else {
+            self.model.lang.selected.code = self.model.lang.available[index].code;
+            self.model.lang.selected.img = self.model.lang.available[index].img;
+        }
     };
 
-    self.calculateTextSize = function(textWidth) {
+    self.calculateTextSize = function (textWidth) {
         var rowWidth = $("#result-wrapper").css("width");
         rowWidth = parseInt(rowWidth.substring(0, rowWidth.length - 2));
         var total = (rowWidth - textWidth) / 2;
@@ -199,7 +208,7 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         self.model.result.config.discourses["max-width"] = (total * 0.2) + "px";
     };
 
-    self.getDiscourses = function() {
+    self.getDiscourses = function () {
         var discourses = [];
 
         for (var i = 0; i < self.model.discourses.length; i++) {
@@ -209,21 +218,25 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         return discourses;
     };
 
-    self.configureSearch = function() {
+    self.configureSearch = function () {
         self.config.graph.show = false;
         self.calculateSearchNodes();
-        self.fillGraph();
-        if (self.model.nodes.length > self.config.graph.maxNodes * 3) {
-            $("#config-footer").css("bottom", "auto");
+        if (self.model.nodes.length < 2) {
+            self.search();
         } else {
-            $("#config-footer").css("bottom", "10px");
+            self.fillGraph();
+            if (self.model.nodes.length > self.config.graph.maxNodes * 3) {
+                $("#config-footer").css("bottom", "auto");
+            } else {
+                $("#config-footer").css("bottom", "10px");
+            }
+            var nodes = $(".arrowsandboxes-node").addClass("clickable-node");
+            $(nodes[nodes.length - 1]).removeClass("clickable-node");
+            $('#config-dialog').modal('show');
         }
-        var nodes = $(".arrowsandboxes-node").addClass("clickable-node");
-        $(nodes[nodes.length - 1]).removeClass("clickable-node");
-        $('#config-dialog').modal('show');
     };
 
-    self.calculateSearchNodes = function() {
+    self.calculateSearchNodes = function () {
         var content = self.model.search.text.trim().split(/\s+/);
         if (self.recalculateNodes(content)) {
             self.model.nodes = [];
@@ -241,7 +254,7 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         }
     };
 
-    self.recalculateNodes = function(content) {
+    self.recalculateNodes = function (content) {
         if (content.length !== self.model.nodes.length) {
             return true;
         }
@@ -254,7 +267,7 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         return false;
     };
 
-    self.fillGraph = function() {
+    self.fillGraph = function () {
         var size = self.model.nodes.length;
         var nodes = "";
         for (var i = 0; i < size; i++) {
@@ -288,7 +301,7 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         self.showGraph(nodes);
     };
 
-    self.parseText = function(content) {
+    self.parseText = function (content) {
         var text = content;
         for (var j = 0; j < self.config.graph.graphSpecialCharacters.length; j++) {
             text = text.replace(self.config.graph.graphSpecialCharacters[j], "{{" + self.config.graph.graphSpecialCharacters[j] + "}}");
@@ -296,19 +309,19 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         return text;
     };
 
-    self.showGraph = function(content) {
+    self.showGraph = function (content) {
         $("#arrows-container").empty();
         $("#arrows-container").append("<pre id='arrows' class='arrows-and-boxes'>" + content + "</pre>");
         $("#arrows").arrows_and_boxes();
     };
 
-    self.searchLetter = function($event) {
+    self.searchLetter = function ($event) {
         self.model.order.letter = $($event.currentTarget).children('a').html();
         self.config.lastSearch.sort.letter = self.model.order.letter;
         self.search(self.config.lastSearch);
     };
 
-    self.search = function(searchData) {
+    self.search = function (searchData) {
         if (!searchData) {
             self.config.lastSearch = self.obtainSearchData();
         }
@@ -330,7 +343,7 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         $("body").addClass("loading");
     };
 
-    self.obtainSearchData = function() {
+    self.obtainSearchData = function () {
         self.model.order.letter = null;
         self.model.result.pager.currentPage = 1;
         var data = {
@@ -355,7 +368,7 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         return data;
     };
 
-    self.searchSuccess = function(data, status) {
+    self.searchSuccess = function (data, status) {
         $("body").removeClass("loading");
         var textWidth = 0;
         self.model.search.isBilingual = false;
@@ -370,7 +383,7 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
             self.model.result.matches.push({
                 previous: $sce.trustAsHtml(previous.replace(/(\r\n|\n|\r)/gm, "")),
                 target: target,
-                next: $sce.trustAsHtml(next),
+                next: $sce.trustAsHtml(next.replace(/(\r\n|\n|\r)/gm, "")),
                 discourses: hit.discourses,
                 link: hit.url
             });
@@ -385,10 +398,9 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         self.model.result.pager.numPages = data.data.numPages;
         self.calculateTextSize(textWidth + 8);
     };
-    
-    self.searchBilingualSuccess = function(data, status) {
+
+    self.searchBilingualSuccess = function (data, status) {
         $("body").removeClass("loading");
-        console.log(data.data);
         var textWidth = 0;
         self.model.search.isBilingual = true;
         self.model.result.matches = [];
@@ -398,9 +410,8 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
             var p1 = hit.snippet.indexOf("<b>"), p2 = hit.snippet.indexOf("</b>");
             var target = hit.snippet.substring(p1 + 3, p2);
             self.model.result.bilingual.push({
-                previous: hit.original,
-                target: $sce.trustAsHtml(hit.snippet),
-                next:hit.translation,
+                original: $sce.trustAsHtml(hit.snippet.replace(/(\r\n|\n|\r)/gm, "")),
+                translation: hit.translation.replace(/(\r\n|\n|\r)/gm, ""),
                 discourses: hit.discourses,
                 link: hit.url
             });
@@ -415,11 +426,11 @@ function searchController($rootScope, $http, $sce, atomicNotifyService, $filter)
         self.model.result.pager.numPages = data.data.numPages;
     };
 
-    self.showPager = function() {
+    self.showPager = function () {
         return self.model.result.pager.numPages > 1;
     };
 
-    self.searchError = function(error) {
+    self.searchError = function (error) {
         $("body").removeClass("loading");
         console.log(error);
     };

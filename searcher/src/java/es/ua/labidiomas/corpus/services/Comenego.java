@@ -50,8 +50,6 @@ import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 @Path("comenego/")
 public class Comenego {
 
-    private Searcher searcher;
-
     private static final int DOCS_BY_PAGE = 50;
 
     @Context
@@ -61,7 +59,7 @@ public class Comenego {
      * Creates a new instance of Searcher
      */
     public Comenego() {
-        searcher = new Searcher();
+
     }
 
     @POST
@@ -76,14 +74,11 @@ public class Comenego {
         SearchResponse result = new SearchResponse();
         List<LuceneSnippet> snippets = new ArrayList<>();
         try (Connection connection = DataBaseHandler.getConnection();) {
+            Searcher searcher = new Searcher(parameters, connection);
             if (parameters.getDiscourses() != null) {
-                Analyzer analyzer = searcher.getAnalyzer(parameters.getLanguage(), parameters.getOptions().isLematize());
-                IndexSearcher indexSearcher = searcher.prepareIndexSearcher(parameters.getLanguage(), parameters.getOptions());
-                BooleanQuery searchQuery = searcher.prepareQuery(analyzer, parameters);
-                Highlighter textHighlighter = searcher.prepareHighlighter(analyzer, parameters);
-
+                BooleanQuery searchQuery = searcher.prepareQuery(parameters);
                 TopGroups tg;
-                tg = searcher.prapareResults(searchQuery, indexSearcher, parameters.getPage());
+                tg = searcher.prapareResults(searchQuery, parameters.getPage());
                 if (tg != null) {
 
                     GroupDocs[] groupedDocs = tg.groups;
@@ -95,7 +90,7 @@ public class Comenego {
                         int top = Math.min(groupDoc.scoreDocs.length, numPageResults);
                         for (int i = offset; i < top; i++) {
                             ScoreDoc sd = groupDoc.scoreDocs[i];
-                            searcher.getSnippets(parameters.getSearch().length(), snippets, sd, indexSearcher, connection, analyzer, textHighlighter, parameters.getOptions().isTitle(), parameters.getOptions().isBilingual());
+                            snippets.addAll(searcher.getSnippets(sd.doc, parameters.getOptions().isTitle(), parameters.getOptions().isBilingual()));
                         }
                     }
                 }
@@ -117,11 +112,6 @@ public class Comenego {
     }
 
     private boolean isLoggedIn(HttpSession session) {
-        if (session.getAttribute("userID") == null) {
-            return false;
-        } else {
-            return true;
-        }
-
+        return session.getAttribute("userID") != null;
     }
 }

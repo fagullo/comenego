@@ -21,7 +21,7 @@ public class LuceneSnippet {
     private String translation;
     
     private String original;
-
+    
     public LuceneSnippet() {
     }
 
@@ -29,6 +29,14 @@ public class LuceneSnippet {
         this.snippet = snippet;
         this.url = url;
         this.discourses = discourses;
+    }
+
+    public LuceneSnippet(String snippet, String url, String discourses, String translation, String original) {
+        this.snippet = snippet;
+        this.url = url;
+        this.discourses = discourses;
+        this.translation = translation;
+        this.original = original;
     }
 
     public String getSnippet() {

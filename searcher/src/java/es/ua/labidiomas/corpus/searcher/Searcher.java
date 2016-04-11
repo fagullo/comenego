@@ -9,7 +9,6 @@ import es.ua.labidiomas.corpus.index.AnalyzerFactory;
 import es.ua.labidiomas.corpus.searcher.search.SearchConfiguration;
 import es.ua.labidiomas.corpus.searcher.search.SearchNode;
 import es.ua.labidiomas.corpus.searcher.search.SearchOptions;
-import es.ua.labidiomas.corpus.searcher.search.SearchParameters;
 import es.ua.labidiomas.corpus.util.Config;
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +18,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
@@ -34,21 +32,16 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.search.grouping.term.TermFirstPassGroupingCollector;
 import org.apache.lucene.search.grouping.term.TermSecondPassGroupingCollector;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
+import org.apache.lucene.search.highlight.NullFragmenter;
 import org.apache.lucene.search.highlight.QueryScorer;
-import org.apache.lucene.search.highlight.SimpleFragmenter;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
-import org.apache.lucene.search.highlight.SimpleSpanFragmenter;
-import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
@@ -68,23 +61,28 @@ public class Searcher {
     private static final int DOCS_BY_PAGE = 50;
 
     private static final String TEXT_QUERY = "SELECT p.content, t.url FROM text t, paragraph p WHERE p.text_id = t.id AND p.id = ?;";
+    private static final String TITLE_QUERY = "SELECT t.title, t.url FROM text t WHERE t.id = ?;";
+    private static final String TITLE_DISCOURSES_QUERY = "SELECT d.code as name FROM discourse_texts dt, discourse d WHERE dt.text_id = ? AND d.id = dt.discourse_id;";
     private static final String DISCOURSES_QUERY = "SELECT d.code as name FROM paragraph p , discourse_texts dt, discourse d"
             + " WHERE dt.text_id = ? AND p.text_id = dt.text_id AND p.id = ? AND d.id = dt.discourse_id;";
 
     private static final String TRANSLATION_QUERY = "SELECT p.content FROM text t, paragraph p WHERE t.id = ? AND t.id = p.text_id AND p.numorder = ?;";
+    private static final String TRANSLATION_TITLE_QUERY = "SELECT t.title FROM text t WHERE t.id = (SELECT original_text_id FROM text WHERE id = ?);";
     private static final String ORIGIN_QUERY = "SELECT t.original_text_id, p.numorder FROM text t, paragraph p WHERE p.id = ? AND t.id = p.text_id;";
 
-    public List<LuceneSnippet> getTextSnippets(
-            int termSize,
-            List<LuceneSnippet> snippets,
-            ScoreDoc sd,
-            IndexSearcher indexSearcher,
-            Connection connection,
-            Analyzer analyzer,
-            Highlighter textHighlighter,
-            boolean isBilingual
-    ) throws IOException, SQLException, InvalidTokenOffsetsException {
-        Document doc = indexSearcher.doc(sd.doc);
+    private Highlighter textHighlighter;
+    private final Connection connection;
+    private Analyzer analyzer;
+    private IndexSearcher indexSearcher;
+
+    public Searcher(SearchConfiguration parameters, Connection connection) throws IOException {
+        this.connection = connection;
+        setAnalyzer(parameters.getLanguage(), parameters.getOptions().isLematize());
+        setHighlighter(parameters);
+        setIndexSearcher(parameters.getLanguage(), parameters.getOptions());
+    }
+
+    public LuceneSnippet getBilingualSnippets(Document doc) throws IOException, SQLException, InvalidTokenOffsetsException {
         int paragraphID = Integer.parseInt(doc.get("paragraphID"));
         int textID = Integer.parseInt(doc.get("textID"));
         try (PreparedStatement textPS = connection.prepareStatement(TEXT_QUERY)) {
@@ -102,179 +100,160 @@ public class Searcher {
                         }
                     }
 
-                    LuceneSnippet result = new LuceneSnippet();
                     TokenStream tokenStream = analyzer.tokenStream("text", textRS.getString("content"));
                     String url = textRS.getString("url");
-                    org.apache.lucene.search.highlight.TextFragment[] fragments = textHighlighter.getBestTextFragments(tokenStream, textRS.getString("content"), false, 600);
-                    for (TextFragment frag : fragments) {
-                        if (frag.getScore() > 0) {
-                            String snippet = frag.toString().replaceAll("[\n\r]", "").replaceAll("</b> <b>", " ").trim();
-                            int numMatches = StringUtils.countMatches(snippet, "<b>");
-                            if (numMatches > 1) {
-                                int start = 0;
-                                int end = 0;
-                                for (int i = 0; i < numMatches; i++) {
-                                    if (i == (numMatches - 1)) {
-                                        result.setSnippet(snippet.substring(start));
-                                    } else {
-                                        int coincidence = snippet.indexOf("</b>", start) + 4;
-                                        int next = snippet.indexOf("<b>", coincidence);
-                                        end = (coincidence + next) / 2;
-                                        end = snippet.indexOf(" ", end);
-                                        result.setSnippet(snippet.substring(start, end));
-                                    }
-                                    result.setUrl(url);
-                                    result.setDiscourses(discourses);
-                                    start = end;
-                                    if (isBilingual) {
-                                        _setTranslation(result, connection, paragraphID, textRS.getString("content"));
-                                    }
-                                    snippets.add(result);
-                                }
-                            } else if (snippet.length() > termSize) {
-                                result.setSnippet(snippet);
-                                result.setUrl(url);
-                                result.setDiscourses(discourses);
-                                if (isBilingual) {
-                                    _setTranslation(result, connection, paragraphID, textRS.getString("content"));
-                                }
-                                snippets.add(result);
-                            }
-                        }
-                    }
+                    String snippet = textHighlighter.getBestFragment(tokenStream, textRS.getString("content"));
+                    return _setTranslation(snippet, url, discourses, paragraphID, textRS.getString("content"));
                 }
             }
         }
 
-        return snippets;
+        return null;
     }
 
-    public List<LuceneSnippet> getTitleSnippets(
-            int termSize,
-            List<LuceneSnippet> snippets,
-            ScoreDoc sd,
-            IndexSearcher indexSearcher,
-            Connection connection,
-            Analyzer analyzer,
-            Highlighter textHighlighter
-    ) throws IOException, SQLException, InvalidTokenOffsetsException {
-        Document doc = indexSearcher.doc(sd.doc);
+    public List<LuceneSnippet> getTextSnippets(Document doc) throws IOException, SQLException, InvalidTokenOffsetsException {
+        int paragraphID = Integer.parseInt(doc.get("paragraphID"));
         int textID = Integer.parseInt(doc.get("textID"));
-        PreparedStatement textPS = connection.prepareStatement("SELECT t.title, t.url FROM text t WHERE t.id = ?;");
-        textPS.setDouble(1, textID);
-        ResultSet textRS = textPS.executeQuery();
-        if (textRS.next()) {
-            String discourses = "";
-            String discorusesQuery = "SELECT d.code as name FROM discourse_texts dt, discourse d"
-                    + " WHERE dt.text_id = ? AND d.id = dt.discourse_id;";
-            PreparedStatement discoursePS = connection.prepareStatement(discorusesQuery);
-            discoursePS.setDouble(1, textID);
-            ResultSet discourseRS = discoursePS.executeQuery();
-            while (discourseRS.next()) {
-                discourses += discourseRS.getString("name") + " ";
-            }
-            discourseRS.close();
-            discoursePS.close();
-
-            LuceneSnippet result = new LuceneSnippet();
-            TokenStream tokenStream = analyzer.tokenStream("title", textRS.getString("title"));
-            String url = textRS.getString("url");
-            org.apache.lucene.search.highlight.TextFragment[] fragments = textHighlighter.getBestTextFragments(tokenStream, textRS.getString("title"), false, 600);
-            for (TextFragment frag : fragments) {
-                if (frag.getScore() > 0) {
-                    String snippet = frag.toString().replaceAll("[\n\r]", "").replaceAll("</b> <b>", " ").trim();
-                    int numMatches = StringUtils.countMatches(snippet, "<b>");
-                    if (numMatches > 1) {
-                        int start = 0;
-                        int end = 0;
-                        for (int i = 0; i < numMatches; i++) {
-                            if (i == (numMatches - 1)) {
-                                result.setSnippet(snippet.substring(start));
-                            } else {
-                                int coincidence = snippet.indexOf("</b>", start) + 4;
-                                int next = snippet.indexOf("<b>", coincidence);
-                                end = (coincidence + next) / 2;
-                                end = snippet.indexOf(" ", end);
-                                result.setSnippet(snippet.substring(start, end));
+        try (PreparedStatement textPS = connection.prepareStatement(TEXT_QUERY)) {
+            textPS.setDouble(1, paragraphID);
+            try (ResultSet textRS = textPS.executeQuery()) {
+                if (textRS.next()) {
+                    String discourses = "";
+                    try (PreparedStatement discoursePS = connection.prepareStatement(DISCOURSES_QUERY)) {
+                        discoursePS.setDouble(1, textID);
+                        discoursePS.setDouble(2, paragraphID);
+                        try (ResultSet discourseRS = discoursePS.executeQuery()) {
+                            while (discourseRS.next()) {
+                                discourses += discourseRS.getString("name") + " ";
                             }
-                            result.setUrl(url);
-                            result.setDiscourses(discourses);
-                            start = end;
-                            snippets.add(result);
                         }
-                    } else if (snippet.length() > termSize) {
-                        result.setSnippet(snippet);
-                        result.setUrl(url);
-                        result.setDiscourses(discourses);
-                        snippets.add(result);
                     }
+
+                    TokenStream tokenStream = analyzer.tokenStream("text", textRS.getString("content"));
+                    String url = textRS.getString("url");
+                    String fragment = textHighlighter.getBestFragment(tokenStream, textRS.getString("content"));
+                    return fragmentText(fragment, url, discourses);
                 }
             }
         }
-        textRS.close();
-        textPS.close();
 
-        return snippets;
+        return new ArrayList<>();
     }
 
-    public List<LuceneSnippet> getSnippets(
-            int termSize,
-            List<LuceneSnippet> snippets,
-            ScoreDoc sd,
-            IndexSearcher indexSearcher,
-            Connection connection,
-            Analyzer analyzer,
-            Highlighter textHighlighter,
-            SearchParameters params
-    ) throws IOException, SQLException, InvalidTokenOffsetsException {
-        if (params.isTitle()) {
-            return getTitleSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter);
-        } else {
-            return getTextSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter, params.isSubSearch());
+    public LuceneSnippet getTitleBilingualSnippets(Document doc) throws IOException, SQLException, InvalidTokenOffsetsException {
+        int textID = Integer.parseInt(doc.get("textID"));
+        try (PreparedStatement textPS = connection.prepareStatement(TITLE_QUERY)) {
+            textPS.setDouble(1, textID);
+            try (ResultSet textRS = textPS.executeQuery()) {
+                if (textRS.next()) {
+                    String discourses = "";
+                    try (PreparedStatement discoursePS = connection.prepareStatement(TITLE_DISCOURSES_QUERY)) {
+                        discoursePS.setDouble(1, textID);
+                        try (ResultSet discourseRS = discoursePS.executeQuery()) {
+                            while (discourseRS.next()) {
+                                discourses += discourseRS.getString("name") + " ";
+                            }
+                        }
+                    }
+
+                    TokenStream tokenStream = analyzer.tokenStream("title", textRS.getString("title"));
+                    String url = textRS.getString("url");
+                    String snippet = textHighlighter.getBestFragment(tokenStream, textRS.getString("title"));
+                    return _setTitleTranslation(snippet, url, discourses, textID, textRS.getString("title"));
+                }
+            }
         }
+
+        return null;
     }
 
-    public List<LuceneSnippet> getSnippets(
-            int termSize,
-            List<LuceneSnippet> snippets,
-            ScoreDoc sd,
-            IndexSearcher indexSearcher,
-            Connection connection,
-            Analyzer analyzer,
-            Highlighter textHighlighter,
-            boolean isTitle,
-            boolean isBilingual
-    ) throws IOException, SQLException, InvalidTokenOffsetsException {
-        if (isTitle) {
-            return getTitleSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter);
-        } else {
-            return getTextSnippets(termSize, snippets, sd, indexSearcher, connection, analyzer, textHighlighter, isBilingual);
+    public List<LuceneSnippet> getTitleSnippets(Document doc) throws IOException, SQLException, InvalidTokenOffsetsException {
+        int textID = Integer.parseInt(doc.get("textID"));
+        try (PreparedStatement textPS = connection.prepareStatement(TITLE_QUERY)) {
+            textPS.setDouble(1, textID);
+            try (ResultSet textRS = textPS.executeQuery()) {
+                if (textRS.next()) {
+                    String discourses = "";
+                    try (PreparedStatement discoursePS = connection.prepareStatement(TITLE_DISCOURSES_QUERY)) {
+                        discoursePS.setDouble(1, textID);
+                        try (ResultSet discourseRS = discoursePS.executeQuery()) {
+                            while (discourseRS.next()) {
+                                discourses += discourseRS.getString("name") + " ";
+                            }
+                        }
+                    }
+
+                    TokenStream tokenStream = analyzer.tokenStream("title", textRS.getString("title"));
+                    String url = textRS.getString("url");
+                    String fragment = textHighlighter.getBestFragment(tokenStream, textRS.getString("title"));
+                    return fragmentText(fragment, url, discourses);
+                }
+            }
         }
+
+        return new ArrayList<>();
     }
 
     /**
-     * Prepares the highlighter to highlight the terms that matches with the
-     * search criteria.
      *
-     * @param searchQuery the query that contains the search criteria.
-     * @return the highlighter configured.
+     * @param text
+     * @param url
+     * @param discourses
+     * @return
      */
-    public Highlighter prepareHighlighter(Analyzer analyzer, SearchConfiguration params) {
-        Query query;
-        if (params.getOptions().isTitle()) {
-            query = _prepareQuery(params.getSearchNodes(), "title", params.getOptions().isOrder(), params.getOptions().isDistance());
-        } else {
-            query = _prepareQuery(params.getSearchNodes(), "text", params.getOptions().isOrder(), params.getOptions().isDistance());
+    private List<LuceneSnippet> fragmentText(final String text, final String url, final String discourses) {
+        List<LuceneSnippet> snippets = new ArrayList<>();
+        if (text != null) {
+            String fragment = text.replaceAll("[\n\r]", "").replaceAll("</b> <b>", " ").trim();
+            int numMatches = StringUtils.countMatches(fragment, "<b>");
+            if (numMatches > 1) {
+                String snippet;
+                int start = 0;
+                int end = 0;
+                for (int i = 0; i < numMatches; i++) {
+                    if (i == (numMatches - 1)) {
+                        snippet = fragment.substring(start);
+                    } else {
+                        int coincidence = fragment.indexOf("</b>", start) + 4;
+                        int next = fragment.indexOf("<b>", coincidence);
+                        end = (coincidence + next) / 2;
+                        end = fragment.indexOf(" ", end);
+                        snippet = fragment.substring(start, end);
+                    }
+                    start = end;
+                    snippets.add(new LuceneSnippet(snippet, url, discourses));
+                }
+            } else {
+                snippets.add(new LuceneSnippet(fragment, url, discourses));
+            }
         }
-        QueryScorer scorer = new QueryScorer(query);
-        SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
-        Highlighter textHighlighter = new Highlighter(formatter, scorer);
-        textHighlighter.setTextFragmenter(new SimpleSpanFragmenter(scorer, 600));
 
-        return textHighlighter;
+        return snippets;
     }
 
-    public TopGroups prapareResults(BooleanQuery query, IndexSearcher indexSearcher, Integer page) throws IOException {
+    public List<LuceneSnippet> getSnippets(int doc, boolean isTitle, boolean isBilingual) throws IOException, SQLException, InvalidTokenOffsetsException {
+        if (isBilingual) {
+            List<LuceneSnippet> snippets = new ArrayList<>();
+            LuceneSnippet snippet;
+            if (isTitle) {
+                snippet = getTitleBilingualSnippets(indexSearcher.doc(doc));
+            } else {
+                snippet = getBilingualSnippets(indexSearcher.doc(doc));
+            }
+            if (snippet != null) {
+                snippets.add(snippet);
+            }
+            return snippets;
+        } else {
+            if (isTitle) {
+                return getTitleSnippets(indexSearcher.doc(doc));
+            } else {
+                return getTextSnippets(indexSearcher.doc(doc));
+            }
+        }
+    }
+
+    public TopGroups prapareResults(BooleanQuery query, Integer page) throws IOException {
 
         int targetPage = page * DOCS_BY_PAGE;
 
@@ -291,15 +270,33 @@ public class Searcher {
     }
 
     /**
+     * Prepares the highlighter to highlight the terms that matches with the
+     * search criteria.
+     *
+     * @param searchQuery the query that contains the search criteria.
+     * @return the highlighter configured.
+     */
+    private void setHighlighter(SearchConfiguration params) {
+        Query query;
+        if (params.getOptions().isTitle()) {
+            query = _prepareQuery(params.getSearchNodes(), "title", params.getOptions().isOrder(), params.getOptions().isDistance());
+        } else {
+            query = _prepareQuery(params.getSearchNodes(), "text", params.getOptions().isOrder(), params.getOptions().isDistance());
+        }
+        QueryScorer scorer = new QueryScorer(query);
+        SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
+        this.textHighlighter = new Highlighter(formatter, scorer);
+        textHighlighter.setTextFragmenter(new NullFragmenter());
+    }
+
+    /**
      * Prepares the index searcher to read the indexes in the indexes directory.
      *
      * @param language
-     * @param title
-     * @param lemma
-     * @param bilingual
+     * @param options
      * @return @throws IOException
      */
-    public IndexSearcher prepareIndexSearcher(String language, SearchOptions options) throws IOException {
+    private void setIndexSearcher(String language, SearchOptions options) throws IOException {
         File indexDir;
         String baseIndexDir = Config.INDEXES_PATH + Config.FILE_SEPARATOR;
         if (options.isBilingual()) {
@@ -319,7 +316,11 @@ public class Searcher {
 
         Directory directory = FSDirectory.open(indexDir);
         DirectoryReader ireader = DirectoryReader.open(directory);
-        return new IndexSearcher(ireader);
+        this.indexSearcher = new IndexSearcher(ireader);
+    }
+
+    private void setAnalyzer(String language, boolean lemma) {
+        this.analyzer = AnalyzerFactory.getInstance().getAnalyzer(language, lemma);
     }
 
     /**
@@ -330,7 +331,7 @@ public class Searcher {
      * @return a boolean query which contains all the search criteria.
      * @throws org.apache.lucene.queryparser.classic.ParseException
      */
-    public BooleanQuery prepareQuery(Analyzer analyzer, SearchConfiguration params) throws ParseException {
+    public BooleanQuery prepareQuery(SearchConfiguration params) throws ParseException {
 
         BooleanQuery searchQuery = new BooleanQuery();
         SpanQuery query;
@@ -340,10 +341,10 @@ public class Searcher {
             query = _prepareQuery(params.getSearchNodes(), "text", params.getOptions().isOrder(), params.getOptions().isDistance());
         }
         if (params.isLetterSearch()) {
-            return _prepareLetterQuery(analyzer, params, query);
+            return _prepareLetterQuery(params, query);
         } else {
             searchQuery.add(query, BooleanClause.Occur.MUST);
-            searchQuery.add(_prepareDiscourseQuery(analyzer, params), BooleanClause.Occur.MUST);
+            searchQuery.add(_prepareDiscourseQuery(params), BooleanClause.Occur.MUST);
             return searchQuery;
         }
     }
@@ -370,7 +371,7 @@ public class Searcher {
         return query;
     }
 
-    private BooleanQuery _prepareDiscourseQuery(Analyzer analyzer, SearchConfiguration params) throws ParseException {
+    private BooleanQuery _prepareDiscourseQuery(SearchConfiguration params) throws ParseException {
         BooleanQuery discourseBooleanQuery = new BooleanQuery();
         QueryParser discourseParser = new QueryParser(Version.LUCENE_47, "discourse", analyzer);
         Query discourseQuery = discourseParser.parse(params.getDiscoursesAsString());
@@ -379,7 +380,7 @@ public class Searcher {
         return discourseBooleanQuery;
     }
 
-    private BooleanQuery _prepareLetterQuery(Analyzer analyzer, SearchConfiguration params, SpanQuery query) throws ParseException {
+    private BooleanQuery _prepareLetterQuery(SearchConfiguration params, SpanQuery query) throws ParseException {
         BooleanQuery searchQuery = new BooleanQuery();
 
         SpanQuery prefixQUery = new SpanMultiTermQueryWrapper(new PrefixQuery(new Term("text", params.getSort().getLetter())));
@@ -402,13 +403,9 @@ public class Searcher {
             searchQuery.add(spanNear1, BooleanClause.Occur.MUST);
         }
 
-        searchQuery.add(_prepareDiscourseQuery(analyzer, params), BooleanClause.Occur.MUST);
+        searchQuery.add(_prepareDiscourseQuery(params), BooleanClause.Occur.MUST);
 
         return searchQuery;
-    }
-
-    public Analyzer getAnalyzer(String language, boolean lemma) {
-        return AnalyzerFactory.getInstance().getAnalyzer(language, lemma);
     }
 
     public void setSnippet(LuceneSnippet snippet, String order, int position) {
@@ -450,7 +447,7 @@ public class Searcher {
         snippet.setSnippet(word);
     }
 
-    private void _setTranslation(LuceneSnippet result, Connection connection, int paragraphID, String original) throws SQLException {
+    private LuceneSnippet _setTranslation(String snippet, String url, String discourses, int paragraphID, String original) throws SQLException {
         String translation = "";
         try (PreparedStatement originalPS = connection.prepareStatement(ORIGIN_QUERY)) {
             originalPS.setDouble(1, paragraphID);
@@ -468,7 +465,18 @@ public class Searcher {
                 }
             }
         }
-        result.setOriginal(original);
-        result.setTranslation(translation);
+        return new LuceneSnippet(snippet, url, discourses, translation, original);
+    }
+
+    private LuceneSnippet _setTitleTranslation(String snippet, String url, String discourses, double textID, String original) throws SQLException {
+        String translation = "";
+        try (PreparedStatement translatePS = connection.prepareStatement(TRANSLATION_TITLE_QUERY)) {
+            translatePS.setDouble(1, textID);
+            try (ResultSet translateRS = translatePS.executeQuery()) {
+                translateRS.next();
+                translation = translateRS.getString("title");
+            }
+        }
+        return new LuceneSnippet(snippet, url, discourses, translation, original);
     }
 }

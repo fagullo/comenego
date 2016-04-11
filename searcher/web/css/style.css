@@ -238,6 +238,16 @@ body.loading #ajax-load {
     vertical-align: middle;
 }
 
+.bilingual-discourse-container {
+    display: table-cell;
+    width: 8%;
+    text-align: center;
+    vertical-align: middle;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    padding: 5px;
+}
+
 .bilingual-container>b {
     color: blue;
 }
