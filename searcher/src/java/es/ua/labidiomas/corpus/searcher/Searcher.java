@@ -479,4 +479,17 @@ public class Searcher {
         }
         return new LuceneSnippet(snippet, url, discourses, translation, original);
     }
+
+    private void _setTitleTranslation(LuceneSnippet result, Connection connection, double textID, String original) throws SQLException {
+        String translation = "";
+        try (PreparedStatement translatePS = connection.prepareStatement(TRANSLATION_TITLE_QUERY)) {
+            translatePS.setDouble(1, textID);
+            try (ResultSet translateRS = translatePS.executeQuery()) {
+                translateRS.next();
+                translation = translateRS.getString("title");
+            }
+        }
+        result.setOriginal(original);
+        result.setTranslation(translation);
+    }
 }
