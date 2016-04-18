@@ -7,6 +7,7 @@ package es.ua.labidiomas.corpus.searcher;
 
 import java.util.Comparator;
 import java.util.HashMap;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  *
@@ -23,43 +24,31 @@ public class NGramsComparator implements Comparator<LuceneSnippet> {
         this.position = position;
         this.sortWords = sortWords;
     }
-    
+
     @Override
     public int compare(LuceneSnippet o1, LuceneSnippet o2) {
         String w1 = _getSortWord(o1.getSnippet());
         String w2 = _getSortWord(o2.getSnippet());
         return w1.compareToIgnoreCase(w2);
     }
-    
+
     private String _getSortWord(String text) {
         if (sortWords.containsKey(text)) {
             return sortWords.get(text);
         }
-        String word;
+        String fragment, word = "";
+        int startIndex, endIndex;
         if (order.equals("before")) {
-            text = " " + text;
-            if (position == 1 ) {
-                word = text.replaceAll(".* (\\S+) <b>.*", "$1");
-            } else if (position == 2) {
-                word = text.replaceAll(".* (\\S+) (\\S+) <b>.*", "$1");
-            } else if (position == 3) {
-                word = text.replaceAll(".* (\\S+) (\\S+) (\\S+) <b>.*", "$1");
-            } else {
-                word = text.replaceAll(".* (\\S+) (\\S+) (\\S+) (\\S+) <b>.*", "$1");
-            }
+            fragment = StringUtils.substringBefore(" " + text, "<b>");
+            startIndex = StringUtils.lastOrdinalIndexOf(fragment, " ", position + 1);
+            endIndex = StringUtils.lastOrdinalIndexOf(fragment, " ", position);
         } else {
-            if (position == 1) {
-                word = text.replaceAll(".*</b>[\\S]* (\\S+).*", "$1");
-            } else if (position == 2) {
-                word = text.replaceAll(".*</b>[\\S]* (\\S+) (\\S+).*", "$2");
-            } else if (position == 3 ) {
-                word = text.replaceAll(".*</b>[\\S]* (\\S+) (\\S+) (\\S+).*", "$3");
-            } else {
-                word = text.replaceAll(".*</b>[\\S]* (\\S+) (\\S+) (\\S+) (\\S+).*", "$4");
-            }
+            fragment = StringUtils.substringAfter(text + " ", "</b>");
+            startIndex = StringUtils.ordinalIndexOf(fragment, " ", position);
+            endIndex = StringUtils.ordinalIndexOf(fragment, " ", position + 1);
         }
-        if (word.equals(text)) {
-            word = "";
+        if (startIndex != -1 && endIndex != -1) {
+            word = fragment.substring(startIndex, endIndex).trim();
         }
         sortWords.put(text, word);
         return word;
